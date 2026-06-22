@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SAD Viewer</title>
+  <link rel="stylesheet" href="viewer.css">
+  <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand-block">
+      <img id="brand-logo" class="brand-logo" src="logo.png" alt=""
+           onerror="this.style.display='none'">
+    </div>
+
+    <div class="topbar-grid">
+      <div class="col">
+        <div class="col-label">SAD:</div>
+        <select id="sad-select"></select>
+      </div>
+      <div class="col">
+        <div class="col-label">Anchor:</div>
+        <div class="col-value" id="anchor-value">Ã¢â‚¬â€</div>
+      </div>
+      <div class="col">
+        <div class="col-label">Typology:</div>
+        <div class="col-value" id="typology-value">Ã¢â‚¬â€</div>
+      </div>
+      <div class="col">
+        <div class="col-label">Index:</div>
+        <div class="col-value mono" id="index-value">Ã¢â‚¬â€</div>
+      </div>
+    </div>
+
+    <div class="topbar-actions">
+      <button id="fit-zoom" class="btn">Fit</button>
+      <button id="export-svg" class="btn primary">Export SVG</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+
+      <section class="anchor-section">
+        <h2>SAD boundary</h2>
+        <ul class="layer-list" id="boundary-layers"></ul>
+      </section>
+
+      <section>
+        <h2>Crop</h2>
+        <div class="seg" id="crop-toggle">
+          <label><input type="radio" name="crop" value="both" checked>Both</label>
+          <label><input type="radio" name="crop" value="inside">Inside</label>
+          <label><input type="radio" name="crop" value="outside">Outside</label>
+        </div>
+      </section>
+
+      <section>
+        <h2>Base map</h2>
+        <ul class="layer-list" id="base-layers"></ul>
+      </section>
+
+      <section>
+        <h2>POI dots</h2>
+        <ul class="layer-list" id="poi-layers"></ul>
+        <div class="sub-controls" id="poi-filter-wrap">
+          <div class="row" style="grid-template-columns: 1fr;">
+            <span class="row-label">Filter by category</span>
+          </div>
+          <ul class="category-checks" id="poi-category-checks"></ul>
+          <div class="bulk-actions">
+            <span class="link" id="poi-all">All</span> Ã‚Â·
+            <span class="link" id="poi-none">None</span>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>POI density heatmap</h2>
+        <ul class="layer-list" id="heatmap-layers"></ul>
+        <div class="sub-controls" id="heatmap-extras">
+          <label class="row">
+            <span class="row-label">Category</span>
+            <select id="heatmap-category" style="grid-column: span 2;">
+              <option value="__all">All POIs</option>
+            </select>
+          </label>
+          <label class="row">
+            <span class="row-label">Bandwidth</span>
+            <input type="range" id="heatmap-bandwidth" min="100" max="500" step="25" value="250">
+            <span class="row-value" id="heatmap-bandwidth-value">250 ft</span>
+          </label>
+          <label class="row">
+            <span class="row-label">Intensity</span>
+            <input type="range" id="heatmap-intensity" min="0.3" max="1.5" step="0.05" value="0.75">
+            <span class="row-value" id="heatmap-intensity-value">0.75</span>
+          </label>
+        </div>
+      </section>
+
+      <section>
+        <h2>Marker sizes</h2>
+        <div class="sub-controls" style="border-left: none; padding-left: 0; margin-left: 0;">
+          <label class="row">
+            <span class="row-label">POI dot</span>
+            <input type="range" id="poi-size" min="1" max="10" step="0.5" value="2.6">
+            <span class="row-value" id="poi-size-value">2.6</span>
+          </label>
+          <label class="row">
+            <span class="row-label">Transit</span>
+            <input type="range" id="transit-size" min="3" max="16" step="0.5" value="7">
+            <span class="row-value" id="transit-size-value">7</span>
+          </label>
+        </div>
+      </section>
+
+      <section>
+        <h2>Activity layers</h2>
+        <ul class="layer-list" id="activity-layers"></ul>
+      </section>
+
+      <section>
+        <h2>Analysis layers</h2>
+        <ul class="layer-list" id="analysis-layers"></ul>
+        <div class="sub-controls" id="walkshed-extras">
+          <label class="row">
+            <span class="row-label">Color</span>
+            <input type="color" id="walkshed-color" value="#7BB661">
+            <span></span>
+          </label>
+          <label class="row">
+            <span class="row-label">Opacity</span>
+            <input type="range" id="walkshed-opacity"
+                    min="0.05" max="1.0" step="0.05" value="0.22">
+            <span class="row-value" id="walkshed-opacity-value">0.22</span>
+          </label>
+        </div>
+      </section>
+
+      <section>
+        <h2>Canvas</h2>
+        <label class="row">
+          <span class="row-label">Background</span>
+          <input type="color" id="canvas-bg" value="#0a0a0a">
+          <span></span>
+        </label>
+      </section>
+
+      <section>
+        <h2>Satellite</h2>
+        <ul class="layer-list">
+          <li>
+            <input type="checkbox" id="tog-satellite">
+            <span class="swatch" style="background:#3d6b4a"></span>
+            <label class="lbl" for="tog-satellite">Satellite imagery</label>
+          </li>
+        </ul>
+        <div class="sub-controls" id="satellite-extras">
+          <label class="row">
+            <span class="row-label">Opacity</span>
+            <input type="range" id="satellite-opacity" min="0.1" max="1" step="0.05" value="0.9">
+            <span class="row-value" id="satellite-opacity-value">0.90</span>
+          </label>
+          <label class="row">
+            <span class="row-label">Source</span>
+            <select id="satellite-provider" style="grid-column: span 2;">
+              <option value="esri">Esri World Imagery (no key)</option>
+              <option value="mapbox">Mapbox Satellite (key)</option>
+            </select>
+          </label>
+          <label class="row" id="satellite-token-row" style="display:none;">
+            <span class="row-label">Token</span>
+            <input type="text" id="satellite-token" placeholder="pk.eyÃ¢â‚¬Â¦"
+                   style="grid-column: span 2; border:none; border-bottom:1px solid var(--line); background:transparent; font-family:var(--mono); font-size:10px; color:var(--ink); padding:2px 0;">
+          </label>
+        </div>
+      </section>
+
+      <section>
+        <h2>Building color</h2>
+        <div class="seg" id="building-mode-toggle">
+          <label><input type="radio" name="bmode" value="default" checked>Standard</label>
+          <label><input type="radio" name="bmode" value="dominant">Building use (OSM)</label>
+        </div>
+        <div class="color-row">
+          <span class="row-label">Building</span>
+          <input type="color" id="building-color" value="#4a4a4a">
+        </div>
+      </section>
+
+      <section>
+        <h2>Layer style</h2>
+        <div class="seg" id="building-style-toggle">
+          <label><input type="radio" name="bstyle" value="fill" checked>Fill</label>
+          <label><input type="radio" name="bstyle" value="outline">Outline</label>
+        </div>
+        <label class="row" id="building-fill-opacity-row">
+          <span class="row-label">Fill opac</span>
+          <input type="range" id="building-fill-opacity" min="0.1" max="1" step="0.05" value="0.92">
+          <span class="row-value" id="building-fill-opacity-value">0.92</span>
+        </label>
+        <label class="row" id="building-outline-weight-row" style="display:none;">
+          <span class="row-label">Line wt</span>
+          <input type="range" id="building-outline-weight" min="0.25" max="4" step="0.25" value="0.6">
+          <span class="row-value" id="building-outline-weight-value">0.6</span>
+        </label>
+        <div class="color-row" id="building-outline-color-row" style="display:none;">
+          <span class="row-label">Line col</span>
+          <input type="color" id="building-outline-color" value="#888888">
+        </div>
+      </section>
+
+      <section class="footer-note">
+        <h2>About</h2>
+        <p>
+          <strong>Sports-Anchored District viewer.</strong><br>
+          Loaded from data/_ui/manifest.json.<br>
+          Drop your logo at code/viewer/logo.svg
+        </p>
+      </section>
+
+    </aside>
+
+    <main class="canvas-wrap">
+      <div class="loading" id="loading">Loading SADÃ¢â‚¬Â¦</div>
+      <svg id="map" xmlns="http://www.w3.org/2000/svg"></svg>
+
+      <div class="scale-chrome">
+        <div id="scale-bar"></div>
+        <span id="scale-label">—</span>
+      </div>
+
+      <div id="north-arrow">N</div>
+    </main>
+  </div>
+
+  <script src="viewer.js"></script>
+  <script src="viewer_modules.js"></script>
+    <script src="viewer_census_timeseries.js"></script>
+  <script src="viewer_parcels.js"></script>
+  <script src="viewer_integration.js"></script>  <script src="https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script src="https://unpkg.com/svg2pdf.js@2.2.3/dist/svg2pdf.umd.min.js"></script>  <script src="viewer_export_legends.js"></script>
+
+  <script src="viewer_export_pdf.js"></script>
+
+  <script src="viewer_export_shrink.js"></script>
+</body>
+</html>
+
+
+

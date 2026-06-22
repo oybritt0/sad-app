@@ -1,0 +1,8 @@
+﻿data/
+_site/
+_gtfs_cache/
+cache/
+**/__pycache__/
+*.pyc
+*.bak_*
+.DS_Store

@@ -1,0 +1,44 @@
+# render.yaml — single-service deployment for the SAD app.
+# One web service (Flask via gunicorn) with a persistent disk holding the data
+# corpus + drawn districts. Drawing runs integration in an in-process background
+# thread (your existing _integrate_async). On startup the service resumes any
+# district left mid-integration by a restart (boot-time reclaim).
+#
+# Render disks attach to exactly ONE service, so we use a single service rather
+# than a separate worker. Fine for low-volume drawing (a few users/day).
+#
+# Deploy: push to GitHub -> Render > New > Blueprint -> pick this repo.
+# Update: git push -> Render rebuilds + redeploys.
+
+services:
+  - type: web
+    name: sad-app
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: standard            # 2GB RAM. Geo pipeline needs it; do NOT use a plan
+                              # that spins down (free/starter idle-spindown can
+                              # interrupt an in-flight integration).
+    healthCheckPath: /health
+    autoDeploy: true          # redeploy on every push to the connected branch
+    envVars:
+      - key: SAD_DATA_DIR
+        value: /data
+      - key: CENSUS_API_KEY
+        sync: false           # set in Render dashboard (Environment tab) as a secret
+      - key: PORT
+        value: "8000"
+      - key: SAD_RESUME_ON_BOOT
+        value: "1"            # resume any district stuck 'running'/'queued' after a restart
+    disk:
+      name: sad-data
+      mountPath: /data
+      sizeGB: 10              # simplified corpus (~600MB) + drawn districts + GTFS cache
+    # gunicorn with ONE worker process: the integration thread + in-memory
+    # extent/layer caches must live in a single process (multiple gunicorn
+    # workers wouldn't share them). threads handle concurrent viewers fine.
+    # long timeout: /extract & /analyze synchronously pull OSM/Census (30-60s).
+    dockerCommand: >
+      gunicorn --chdir /app/code
+      --bind 0.0.0.0:$PORT
+      --workers 1 --threads 8 --timeout 180
+      "sad_match_server:make_app(__import__('pathlib').Path('/data'), __import__('os').environ.get('CENSUS_API_KEY',''), 2023)"

@@ -1,0 +1,13 @@
+# Keep the image lean: code only. Data lives on the Render persistent disk.
+**/.git
+**/__pycache__
+**/*.pyc
+data/
+_site/
+_gtfs_cache/
+*.bak_*
+**/.DS_Store
+# research/training track not used by the cloud app
+*_train.py
+cvae_train.py
+vgae_train.py
