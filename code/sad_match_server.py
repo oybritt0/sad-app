@@ -90,8 +90,13 @@ class Corpus:
     def __init__(self, data_dir: Path):
         man = data_dir / "_compare_ui" / "compare_manifest.json"
         if not man.exists():
-            raise FileNotFoundError(f"compare_manifest.json not found at {man} â€” run build_compare_manifest.py first")
-        self.m = json.loads(man.read_text(encoding="utf-8"))
+            # Empty persistent disk (first boot before data upload). Start with
+            # an empty corpus so the service stays up to serve the viewer and
+            # accept the data upload; it loads for real on the next restart.
+            print(f"  [corpus] no compare_manifest at {man}; starting EMPTY (upload data, then restart)")
+            self.m = {"sads": []}
+        else:
+            self.m = json.loads(man.read_text(encoding="utf-8"))
         self.records = []
         for r in self.m.get("sads", []):
             sad = (r.get("census") or {}).get("sad")
@@ -103,7 +108,15 @@ class Corpus:
                     "demo": sad,
                 })
         if not self.records:
-            raise ValueError("No SADs with census summaries in the manifest.")
+            # Empty corpus (no data yet). Keep the service alive with empty
+            # matching state instead of crashing; matching simply returns
+            # nothing until data is uploaded and the service restarts.
+            print("  [corpus] no SADs with census summaries; matching disabled until data is present")
+            self.feat_present = []
+            self.cols = {}
+            self.mean = {}
+            self.std = {}
+            return
         # corpus matrix + per-feature mean/std for z-scoring
         self.feat_present = [f for f in DEMO_FEATURES
                              if sum(1 for x in self.records if _num(x["demo"].get(f)) is not None) >= max(3, len(self.records) // 2)]
@@ -684,6 +697,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
