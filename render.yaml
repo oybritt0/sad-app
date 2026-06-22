@@ -15,30 +15,25 @@ services:
     name: sad-app
     runtime: docker
     dockerfilePath: ./Dockerfile
-    plan: standard            # 2GB RAM. Geo pipeline needs it; do NOT use a plan
-                              # that spins down (free/starter idle-spindown can
-                              # interrupt an in-flight integration).
+    plan: standard
     healthCheckPath: /health
-    autoDeploy: true          # redeploy on every push to the connected branch
+    autoDeploy: true
     envVars:
       - key: SAD_DATA_DIR
         value: /data
       - key: CENSUS_API_KEY
-        sync: false           # set in Render dashboard (Environment tab) as a secret
+        sync: false
       - key: PORT
         value: "8000"
       - key: SAD_RESUME_ON_BOOT
-        value: "1"            # resume any district stuck 'running'/'queued' after a restart
+        value: "1"
+      - key: SAD_ACS_YEAR
+        value: "2023"
     disk:
       name: sad-data
       mountPath: /data
-      sizeGB: 10              # simplified corpus (~600MB) + drawn districts + GTFS cache
-    # gunicorn with ONE worker process: the integration thread + in-memory
-    # extent/layer caches must live in a single process (multiple gunicorn
-    # workers wouldn't share them). threads handle concurrent viewers fine.
-    # long timeout: /extract & /analyze synchronously pull OSM/Census (30-60s).
-    dockerCommand: >
-      gunicorn --chdir /app/code
-      --bind 0.0.0.0:$PORT
-      --workers 1 --threads 8 --timeout 180
-      "sad_match_server:make_app(__import__('pathlib').Path('/data'), __import__('os').environ.get('CENSUS_API_KEY',''), 2023)"
+      sizeGB: 10
+    # gunicorn imports `app` from code/wsgi.py. ONE worker (the integration
+    # thread + in-memory caches must share a process); threads handle concurrent
+    # viewers. Long timeout: /extract & /analyze synchronously pull OSM/Census.
+    dockerCommand: gunicorn --chdir /app/code --bind 0.0.0.0:$PORT --workers 1 --threads 8 --timeout 180 wsgi:app
