@@ -61,7 +61,7 @@
     addActions(host, nav);
   }
 
-  var MATCH_API = 'http://localhost:8000';
+  var MATCH_API = '';
   function addActions(host, nav) {
     if (document.getElementById('sf-act')) return;
     var act = document.createElement('span');
