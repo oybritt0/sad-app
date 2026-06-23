@@ -578,7 +578,7 @@ def make_app(data_dir: Path, api_key: str, year: int) -> "Flask":
             body = request.get_json(force=True)
             geom = body.get("geometry")
             layer = body.get("layer")
-            extent = body.get("extent", "sad")
+            extent = "sad"  # forced: drawn districts always pull at SAD scale (city would OOM the worker)
             if not geom or not layer:
                 return jsonify({"ok": False, "error": "Need geometry and layer."}), 400
             key = _area_key(geom, extent)
@@ -611,7 +611,7 @@ def make_app(data_dir: Path, api_key: str, year: int) -> "Flask":
         try:
             body = request.get_json(force=True)
             geom = body.get("geometry")
-            extent = body.get("extent", "sad")
+            extent = "sad"  # forced: drawn districts always pull at SAD scale (city would OOM the worker)
             name = body.get("name", "Drawn district")
             if not geom:
                 return jsonify({"ok": False, "error": "No geometry."}), 400
