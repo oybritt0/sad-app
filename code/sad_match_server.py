@@ -457,27 +457,26 @@ def _resume_interrupted(data_dir: Path):
 
 def make_app(data_dir: Path, api_key: str, year: int) -> "Flask":
     app = Flask(__name__)
-# --- Basic auth (shared password). Disabled if BASIC_AUTH_USER/PASS env vars
-# are unset, so local dev keeps working without a prompt.
-from functools import wraps as _wraps
-from flask import Response as _Response, request as _req
-def _sad_check_auth(u, p):
-    eu = os.environ.get('BASIC_AUTH_USER', '')
-    ep = os.environ.get('BASIC_AUTH_PASS', '')
-    if not eu or not ep:
-        return True
-    return u == eu and p == ep
-@app.before_request
-def _sad_require_basic_auth():
-    # /health is exempt so Render's health probe stays green.
-    if _req.path == '/health':
-        return None
-    a = _req.authorization
-    if a and _sad_check_auth(a.username, a.password):
-        return None
-    return _Response('Authentication required', 401,
-                     {'WWW-Authenticate': 'Basic realm="SAD Toolkit"'})
-# --- end basic auth ---
+    # --- Basic auth (shared password). Disabled if BASIC_AUTH_USER/PASS env
+    # vars are unset, so local dev keeps working without a prompt.
+    from flask import Response as _Response, request as _req
+    def _sad_check_auth(u, p):
+        eu = os.environ.get('BASIC_AUTH_USER', '')
+        ep = os.environ.get('BASIC_AUTH_PASS', '')
+        if not eu or not ep:
+            return True
+        return u == eu and p == ep
+    @app.before_request
+    def _sad_require_basic_auth():
+        # /health is exempt so Render's health probe stays green.
+        if _req.path == '/health':
+            return None
+        a = _req.authorization
+        if a and _sad_check_auth(a.username, a.password):
+            return None
+        return _Response('Authentication required', 401,
+                         {'WWW-Authenticate': 'Basic realm="SAD Toolkit"'})
+    # --- end basic auth ---
     corpus = Corpus(data_dir)
     _resume_interrupted(data_dir)
     print(f"  corpus loaded: {len(corpus.records)} SADs Â· matching on {len(corpus.feat_present)} demographic dims")
