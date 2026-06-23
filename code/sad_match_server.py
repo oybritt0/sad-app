@@ -461,6 +461,7 @@ def make_app(data_dir: Path, api_key: str, year: int) -> "Flask":
     # vars are unset, so local dev keeps working without a prompt.
     from flask import Response as _Response, request as _req
     def _sad_check_auth(u, p):
+        import os
         eu = os.environ.get('BASIC_AUTH_USER', '')
         ep = os.environ.get('BASIC_AUTH_PASS', '')
         if not eu or not ep:
