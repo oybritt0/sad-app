@@ -153,10 +153,41 @@ def _osm():
 
 # ── extent resolution ────────────────────────────────────────────────────────
 def resolve_extent(geometry: dict, extent: str, year: int, api_key: str):
-    """Return (extent_polygon_4326, info). extent: 'sad' | 'city'."""
+    """Return (extent_polygon_4326, info). extent: 'sad' | 'city'.
+
+    For 'sad', the drawn polygon is buffered outward to a target analysis
+    canvas of ~4 km^2 (roughly 20-30 min walking radius), providing context
+    that matches the scale of pre-saved corpus districts. Draws already
+    >= the target keep their original shape.
+    """
     poly = shape(geometry)
     if extent == 'sad':
-        return poly, {'kind': 'sad', 'name': 'Drawn boundary'}
+        TARGET_KM2 = 4.0
+        # Project to US Albers equal-area for accurate area + buffer math.
+        gs = gpd.GeoSeries([poly], crs='EPSG:4326').to_crs(EQUAL_AREA)
+        poly_m = gs.iloc[0]
+        area_km2 = poly_m.area / 1_000_000.0
+        if area_km2 >= TARGET_KM2:
+            return poly, {'kind': 'sad', 'name': 'Drawn boundary',
+                          'area_km2': round(area_km2, 2)}
+        # Circle-equivalent buffer to reach target area, with one correction pass.
+        import math
+        r_now = math.sqrt(poly_m.area / math.pi)
+        r_tgt = math.sqrt(TARGET_KM2 * 1_000_000.0 / math.pi)
+        buf = r_tgt - r_now
+        buffered_m = poly_m.buffer(buf)
+        achieved_km2 = buffered_m.area / 1_000_000.0
+        # Correction: if we missed by >20%, scale buffer distance and re-buffer.
+        if abs(achieved_km2 - TARGET_KM2) / TARGET_KM2 > 0.2:
+            scale = math.sqrt(TARGET_KM2 / max(achieved_km2, 0.01))
+            buffered_m = poly_m.buffer(buf * scale)
+            achieved_km2 = buffered_m.area / 1_000_000.0
+        # Project back to WGS84.
+        buffered = gpd.GeoSeries([buffered_m], crs=EQUAL_AREA).to_crs('EPSG:4326').iloc[0]
+        return buffered, {'kind': 'sad_buffered',
+                          'name': 'Drawn boundary + context buffer',
+                          'area_km2': round(achieved_km2, 2),
+                          'original_area_km2': round(area_km2, 2)}
     c = poly.centroid
     place_geom, place_info = m4c.resolve_place(c.x, c.y, year)
     if place_geom is None:
@@ -322,12 +353,14 @@ def save_district(name: str, drawn_geometry: dict, extent_poly, extent_info: dic
     (src / 'sad_boundary.geojson').write_text(json.dumps(
         {'type': 'FeatureCollection', 'features': [{'type': 'Feature', 'properties': {}, 'geometry': drawn_geometry}]}))
 
-    # image_extent = SAD bbox buffered out, so the viewer frames surrounding
-    # context (satellite, heatmap, walkshed) instead of clipping to the boundary.
+    # image_extent = analysis-canvas bbox buffered out, so the viewer frames
+    # surrounding context (satellite, heatmap, walkshed) and shows all the data
+    # we actually pulled. Uses extent_poly (the buffered analysis canvas), not
+    # the raw drawn polygon, so context is visible at the full canvas scale.
     from shapely.geometry import shape as _shape, box as _box
-    minx, miny, maxx, maxy = _shape(drawn_geometry).bounds
-    mx = (maxx - minx) * 0.6 or 0.005
-    my = (maxy - miny) * 0.6 or 0.005
+    minx, miny, maxx, maxy = extent_poly.bounds
+    mx = (maxx - minx) * 0.2 or 0.005
+    my = (maxy - miny) * 0.2 or 0.005
     ext = _box(minx - mx, miny - my, maxx + mx, maxy + my)
     (src / 'image_extent.geojson').write_text(json.dumps(
         {'type': 'FeatureCollection', 'features': [{'type': 'Feature', 'properties': {}, 'geometry': ext.__geo_interface__}]}))
