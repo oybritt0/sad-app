@@ -28,3 +28,4 @@ planetary-computer>=1.0
 matplotlib>=3.8
 Pillow>=10.0
 pygris
+rioxarray
