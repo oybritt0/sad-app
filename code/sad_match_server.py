@@ -435,7 +435,7 @@ def _resume_interrupted(data_dir: Path):
     thread so a redeploy mid-draw doesn't strand a district. Gated on
     SAD_RESUME_ON_BOOT so it never fires during local use."""
     import os as _os
-    if not _os.environ.get('SAD_RESUME_ON_BOOT'):
+    if _os.environ.get('SAD_RESUME_ON_BOOT', '') != '1':
         return
     try:
         for sd in sorted(data_dir.iterdir()):
@@ -612,7 +612,13 @@ def make_app(data_dir: Path, api_key: str, year: int) -> "Flask":
             body = request.get_json(force=True)
             geom = body.get("geometry")
             extent = "sad"  # forced: drawn districts always pull at SAD scale (city would OOM the worker)
-            name = body.get("name", "Drawn district")
+            name = (body.get("name") or "").strip()
+            if not name:
+                # No fallback to "Drawn district" placeholder; we got bitten by
+                # stuck-state recovery on auto-named districts. Use a timestamp
+                # so each unnamed draw is unique and traceable.
+                from datetime import datetime as _dt
+                name = "Drawn-" + _dt.utcnow().strftime("%Y%m%d-%H%M%S")
             if not geom:
                 return jsonify({"ok": False, "error": "No geometry."}), 400
             key = _area_key(geom, extent)
