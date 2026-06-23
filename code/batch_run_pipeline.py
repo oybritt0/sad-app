@@ -1,4 +1,4 @@
-﻿"""
+"""
 batch_run_pipeline.py â€” Run the full SAD pipeline across all districts.
 
 Walks every SAD with a source/ folder and runs each module in dependency
@@ -326,6 +326,7 @@ PER_SAD_MODULES = [
         'args':   ['--derived', '{derived}', '--source', '{source}', '--timeseries'],
         'marker': 'jobs/jobs_blocks.geojson',
         'needs':  ['manifest.json'],
+        'skip_for_drawn': True,  # LODES TIGER download peaks memory; skip on hosted draws
     },
     {
         'name':   'M21',
@@ -340,6 +341,7 @@ PER_SAD_MODULES = [
         'args':   ['--derived', '{derived}', '--source', '{source}'],
         'marker': 'environment/heat_grid.geojson',
         'needs':  ['manifest.json'],
+        'skip_for_drawn': True,  # Planetary Computer raster ops peak memory; skip on hosted draws
     },
 ]
 
@@ -434,6 +436,14 @@ def find_rod_places(data_dir: Path, sad_id: str) -> Path | None:
 CANADIAN_PROVINCES = {
     'AB', 'BC', 'MB', 'NB', 'NL', 'NS', 'NT', 'NU', 'ON', 'PE', 'QC', 'SK', 'YT'
 }
+
+
+def is_drawn_district(sad_id: str) -> bool:
+    """Drawn-via-UI districts use 'Drawn-district' in the slug.
+    Heavier modules (M20 LODES, M22 environment) peak memory beyond the
+    hosted instance ceiling, so we skip them for drawn districts. Corpus
+    districts (which were processed locally) keep their full outputs."""
+    return 'Drawn-district' in sad_id
 
 
 def is_canadian_sad(sad_id: str) -> bool:
@@ -540,6 +550,17 @@ def run_per_sad_phase(data_dir: Path, code_dir: Path, sads: list[str],
                     'sad_id': sad_id, 'module': mod['name'],
                     'status': 'skip-not-us', 'duration_s': 0,
                     'error': 'US Census Bureau API has no Canadian coverage'})
+                continue
+            # Skip memory-heavy modules for drawn districts on hosted instances.
+            # Corpus districts already have these outputs from local runs;
+            # drawn districts can be re-integrated locally if needed.
+            if mod.get('skip_for_drawn') and is_drawn_district(sad_id):
+                print(f"  {tag} skip â€” {sad_id} is a drawn district "
+                      f"(skip on hosted to fit memory budget)", flush=True)
+                summary_rows.append({
+                    'sad_id': sad_id, 'module': mod['name'],
+                    'status': 'skip-drawn', 'duration_s': 0,
+                    'error': 'Skipped for drawn district (run locally for full coverage)'})
                 continue
 
             # Skip M4 if no CENSUS_API_KEY in env
