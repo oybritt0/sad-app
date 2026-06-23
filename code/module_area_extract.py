@@ -339,7 +339,7 @@ def save_district(name: str, drawn_geometry: dict, extent_poly, extent_info: dic
         'parks':     ['source/parks.geojson'],
         'parking':   ['source/parking.geojson'],
         'highways':  ['source/highways.geojson'],
-        'pois':      ['source/rod_places.geojson'],
+        'pois':      ['03_ROD-Search-Tool/ROD_Search/overture_places.geojson'],
         'transit':   ['derived/transit/transit_stations.geojson'],
         'walkshed':  ['derived/walkshed/walksheds.geojson'],
         'census':    ['derived/census_blockgroups.geojson'],
