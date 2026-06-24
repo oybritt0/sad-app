@@ -82,7 +82,7 @@ MODE_COLOR = {
     'bus': '#5b9bd5', 'ferry': '#4f9d69', 'cable': '#9aa0a8',
     'monorail': '#cdbb4f', 'other': '#9aa0a8',
 }
-DEFAULT_CATALOG_URL = "https://share.mobilitydata.org/catalogs-csv"
+DEFAULT_CATALOG_URL = "https://storage.googleapis.com/storage/v1/b/mdb-csv/o/sources.csv?alt=media"  # direct GCS URL; share.mobilitydata.org is Cloudflare-walled and returns 403 to headless requests
 
 
 # ─── GTFS loading ────────────────────────────────────────────────────────────
