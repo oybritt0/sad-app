@@ -152,7 +152,7 @@ def _osm():
 
 
 # ── extent resolution ────────────────────────────────────────────────────────
-def resolve_extent(geometry: dict, extent: str, year: int, api_key: str):
+def resolve_extent(geometry: dict, extent: str, year: int, api_key: str, extent_km2: float = 4.0):
     """Return (extent_polygon_4326, info). extent: 'sad' | 'city'.
 
     For 'sad', the drawn polygon is buffered outward to a target analysis
@@ -167,8 +167,11 @@ def resolve_extent(geometry: dict, extent: str, year: int, api_key: str):
         # get usable neighborhood context. Larger draws expand to fit their
         # full bounding box but stay square so the SVG/PDF exports keep a
         # consistent 1:1 aspect ratio that stacks cleanly in decks.
-        TARGET_KM2 = 4.0
-        MIN_HALF_M = 1000.0  # 2 km side length = 4 km^2 minimum
+        # Caller can request a larger canvas via extent_km2 (clamped 4-12 km^2).
+        import math as _math
+        target_km2 = max(4.0, min(12.0, float(extent_km2)))
+        MIN_HALF_M = _math.sqrt(target_km2 * 1_000_000.0) / 2.0
+        TARGET_KM2 = target_km2
         from shapely.geometry import box as _box
         gs = gpd.GeoSeries([poly], crs='EPSG:4326').to_crs(EQUAL_AREA)
         poly_m = gs.iloc[0]

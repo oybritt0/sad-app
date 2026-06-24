@@ -584,7 +584,8 @@ def make_app(data_dir: Path, api_key: str, year: int) -> "Flask":
             key = _area_key(geom, extent)
             ent = _EXTENT_CACHE.get(key)
             if not ent:
-                poly, info = mae.resolve_extent(geom, extent, year, api_key)
+                extent_km2 = float(body.get("extent_km2") or 4.0)
+                poly, info = mae.resolve_extent(geom, extent, year, api_key, extent_km2)
                 ent = {"poly": poly, "info": info}
                 _EXTENT_CACHE[key] = ent
             lkey = key + ":" + layer
@@ -624,7 +625,8 @@ def make_app(data_dir: Path, api_key: str, year: int) -> "Flask":
             key = _area_key(geom, extent)
             ent = _EXTENT_CACHE.get(key)
             if not ent:
-                poly, info = mae.resolve_extent(geom, extent, year, api_key)
+                extent_km2 = float(body.get("extent_km2") or 4.0)
+                poly, info = mae.resolve_extent(geom, extent, year, api_key, extent_km2)
                 ent = {"poly": poly, "info": info}
                 _EXTENT_CACHE[key] = ent
             layers = {lk[len(key) + 1:]: fc for lk, fc in _LAYER_CACHE.items() if lk.startswith(key + ":")}
