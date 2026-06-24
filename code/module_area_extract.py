@@ -169,7 +169,7 @@ def resolve_extent(geometry: dict, extent: str, year: int, api_key: str, extent_
         # consistent 1:1 aspect ratio that stacks cleanly in decks.
         # Caller can request a larger canvas via extent_km2 (clamped 4-12 km^2).
         import math as _math
-        target_km2 = max(4.0, min(12.0, float(extent_km2)))
+        target_km2 = max(1.0, min(12.0, float(extent_km2)))
         MIN_HALF_M = _math.sqrt(target_km2 * 1_000_000.0) / 2.0
         TARGET_KM2 = target_km2
         from shapely.geometry import box as _box
