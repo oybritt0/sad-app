@@ -439,11 +439,13 @@ CANADIAN_PROVINCES = {
 
 
 def is_drawn_district(sad_id: str) -> bool:
-    """Drawn-via-UI districts use 'Drawn-district' in the slug.
+    """Drawn-via-UI districts have either 'Drawn-district' (unnamed timestamp
+    fallback) OR 'Drawn-boundary' (user-named, suffix from resolve_extent
+    info dict) in the slug. Match either pattern.
     Heavier modules (M20 LODES, M22 environment) peak memory beyond the
     hosted instance ceiling, so we skip them for drawn districts. Corpus
     districts (which were processed locally) keep their full outputs."""
-    return 'Drawn-district' in sad_id
+    return ('Drawn-district' in sad_id) or ('Drawn-boundary' in sad_id)
 
 
 def is_canadian_sad(sad_id: str) -> bool:
