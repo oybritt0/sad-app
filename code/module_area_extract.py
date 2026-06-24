@@ -162,32 +162,31 @@ def resolve_extent(geometry: dict, extent: str, year: int, api_key: str):
     """
     poly = shape(geometry)
     if extent == 'sad':
+        # Axis-aligned square canvas centered on the polygon centroid.
+        # Minimum 4 km^2 (2 km half-extent each direction) so small draws still
+        # get usable neighborhood context. Larger draws expand to fit their
+        # full bounding box but stay square so the SVG/PDF exports keep a
+        # consistent 1:1 aspect ratio that stacks cleanly in decks.
         TARGET_KM2 = 4.0
-        # Project to US Albers equal-area for accurate area + buffer math.
+        MIN_HALF_M = 1000.0  # 2 km side length = 4 km^2 minimum
+        from shapely.geometry import box as _box
         gs = gpd.GeoSeries([poly], crs='EPSG:4326').to_crs(EQUAL_AREA)
         poly_m = gs.iloc[0]
-        area_km2 = poly_m.area / 1_000_000.0
-        if area_km2 >= TARGET_KM2:
-            return poly, {'kind': 'sad', 'name': 'Drawn boundary',
-                          'area_km2': round(area_km2, 2)}
-        # Circle-equivalent buffer to reach target area, with one correction pass.
-        import math
-        r_now = math.sqrt(poly_m.area / math.pi)
-        r_tgt = math.sqrt(TARGET_KM2 * 1_000_000.0 / math.pi)
-        buf = r_tgt - r_now
-        buffered_m = poly_m.buffer(buf)
-        achieved_km2 = buffered_m.area / 1_000_000.0
-        # Correction: if we missed by >20%, scale buffer distance and re-buffer.
-        if abs(achieved_km2 - TARGET_KM2) / TARGET_KM2 > 0.2:
-            scale = math.sqrt(TARGET_KM2 / max(achieved_km2, 0.01))
-            buffered_m = poly_m.buffer(buf * scale)
-            achieved_km2 = buffered_m.area / 1_000_000.0
-        # Project back to WGS84.
-        buffered = gpd.GeoSeries([buffered_m], crs=EQUAL_AREA).to_crs('EPSG:4326').iloc[0]
-        return buffered, {'kind': 'sad_buffered',
-                          'name': 'Drawn boundary + context buffer',
-                          'area_km2': round(achieved_km2, 2),
-                          'original_area_km2': round(area_km2, 2)}
+        original_area_km2 = poly_m.area / 1_000_000.0
+        # Centroid of the actual polygon (not the bbox) so long/asymmetric
+        # draws pull from where the mass is, not where the bbox happens to be.
+        cx, cy = poly_m.centroid.x, poly_m.centroid.y
+        # Size the square to the larger of (minimum, drawn bbox half-extent).
+        minx, miny, maxx, maxy = poly_m.bounds
+        half = max(MIN_HALF_M, (maxx - minx) / 2.0, (maxy - miny) / 2.0)
+        square_m = _box(cx - half, cy - half, cx + half, cy + half)
+        achieved_km2 = (2.0 * half / 1000.0) ** 2
+        square = gpd.GeoSeries([square_m], crs=EQUAL_AREA).to_crs('EPSG:4326').iloc[0]
+        return square, {'kind': 'sad_square',
+                        'name': 'Drawn boundary + 4 km^2 square canvas',
+                        'area_km2': round(achieved_km2, 2),
+                        'original_area_km2': round(original_area_km2, 2),
+                        'side_km': round(2.0 * half / 1000.0, 2)}
     c = poly.centroid
     place_geom, place_info = m4c.resolve_place(c.x, c.y, year)
     if place_geom is None:
@@ -353,15 +352,14 @@ def save_district(name: str, drawn_geometry: dict, extent_poly, extent_info: dic
     (src / 'sad_boundary.geojson').write_text(json.dumps(
         {'type': 'FeatureCollection', 'features': [{'type': 'Feature', 'properties': {}, 'geometry': drawn_geometry}]}))
 
-    # image_extent = analysis-canvas bbox buffered out, so the viewer frames
-    # surrounding context (satellite, heatmap, walkshed) and shows all the data
-    # we actually pulled. Uses extent_poly (the buffered analysis canvas), not
-    # the raw drawn polygon, so context is visible at the full canvas scale.
+    # image_extent = analysis-canvas bbox, no inflation. With the square 4 km^2
+    # canvas, the extent_poly already includes the right amount of context;
+    # adding a buffer here would just create dead space outside the data pull.
+    # The SVG/PDF exports render exactly the square the user drew + minimum
+    # context, with a clean 1:1 aspect ratio that stacks in decks.
     from shapely.geometry import shape as _shape, box as _box
     minx, miny, maxx, maxy = extent_poly.bounds
-    mx = (maxx - minx) * 0.2 or 0.005
-    my = (maxy - miny) * 0.2 or 0.005
-    ext = _box(minx - mx, miny - my, maxx + mx, maxy + my)
+    ext = _box(minx, miny, maxx, maxy)
     (src / 'image_extent.geojson').write_text(json.dumps(
         {'type': 'FeatureCollection', 'features': [{'type': 'Feature', 'properties': {}, 'geometry': ext.__geo_interface__}]}))
 
