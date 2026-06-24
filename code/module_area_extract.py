@@ -335,6 +335,32 @@ def _slug(name: str) -> str:
     return s or 'drawn'
 
 
+def _rewrite_pois_for_m3(fc: dict) -> dict:
+    """Rewrite the ROD-formatted POI FC into the schema M3 expects.
+
+    M3 reads its input file expecting raw-Overture column names:
+      - primary_category   (string)
+      - taxonomy_hierarchy (list — M3 takes the first element as top-level)
+
+    The ROD-formatted FC has `category` (the Overture primary) and
+    `rossetti_category` (the rollup). Rename `category` -> `primary_category`
+    and synthesize `taxonomy_hierarchy` as a single-element list. M3 will
+    then run its own rollup logic correctly. The ROD-formatted file at
+    `source/rod_places.geojson` is written separately for the viewer / M16.
+    """
+    out_feats = []
+    for f in fc.get('features', []):
+        p = dict(f.get('properties', {}))
+        pc = p.pop('category', None)
+        p['primary_category'] = pc
+        p['taxonomy_hierarchy'] = [pc] if pc else []
+        out_feats.append({
+            'type': 'Feature',
+            'geometry': f.get('geometry'),
+            'properties': p,
+        })
+    return {'type': 'FeatureCollection', 'features': out_feats}
+
 def save_district(name: str, drawn_geometry: dict, extent_poly, extent_info: dict,
                   data_dir: Path, layers: dict, year: int, api_key: str) -> str:
     """Write source/*.geojson for a new district folder; returns sad_id.
@@ -373,7 +399,7 @@ def save_district(name: str, drawn_geometry: dict, extent_poly, extent_info: dic
         'parks':     ['source/parks.geojson'],
         'parking':   ['source/parking.geojson'],
         'highways':  ['source/highways.geojson'],
-        'pois':      ['03_ROD-Search-Tool/ROD_Search/overture_places.geojson'],
+        'pois':      ['source/rod_places.geojson', '03_ROD-Search-Tool/ROD_Search/overture_places.geojson'],
         'transit':   ['derived/transit/transit_stations.geojson'],
         'walkshed':  ['derived/walkshed/walksheds.geojson'],
         'census':    ['derived/census_blockgroups.geojson'],
@@ -392,7 +418,14 @@ def save_district(name: str, drawn_geometry: dict, extent_poly, extent_info: dic
         for rel in rels:
             p = base / rel
             p.parent.mkdir(parents=True, exist_ok=True)
-            p.write_text(json.dumps(fc))
+            # Special-case the canonical-path POI file: M3 expects raw Overture
+            # column names (primary_category, taxonomy_hierarchy). Rewrite the
+            # ROD-formatted features into M3's expected schema before writing.
+            if rel.endswith('overture_places.geojson') and key == 'pois':
+                fc_for_m3 = _rewrite_pois_for_m3(fc)
+                p.write_text(json.dumps(fc_for_m3))
+            else:
+                p.write_text(json.dumps(fc))
     (src / 'extent.json').write_text(json.dumps({'extent': extent_info, 'name': name}, indent=2))
     # Write a georeferencing manifest now so the metadata modules (M3, M4,
     # M20-22) can run without M1's image generator (which targets the CV path).
