@@ -264,6 +264,30 @@ PER_SAD_MODULES = [
         'needs':  ['buildings_enriched.gpkg'],
     },
 
+    # ---- Phase 4c: enrich buildings with NSI HAZUS + FEMA USA Structures ----
+    # M3d augments buildings_enriched.geojson IN PLACE with structural attrs
+    # (occupancy class, story count, year built, square footage, measured
+    # height, etc.) joined from public US datasets. Powers the viewer's
+    # Occupancy / Height / Year-built color modes and stacked filters.
+    #
+    # Sources: USACE National Structure Inventory (HAZUS-aligned point data)
+    #          FEMA USA Structures (polygon footprints with measured height)
+    # Both are US-only -> Canadian SADs auto-skip via us_only.
+    # Hits two public endpoints, so will fail without internet.
+    {
+        'name':   'M3d',
+        'script': 'module_3d_building_attrs.py',
+        'args':   ['--source', '{source}', '--derived', '{derived}'],
+        # buildings_attrs.geojson is the intermediate raw-join output;
+        # the enriched-in-place file (buildings_enriched.geojson) is the
+        # one the viewer reads. Either could serve as the marker; we use
+        # the intermediate because it is M3d-specific (the enriched file
+        # is already M5geo's marker, so reusing it would mask M3d skips).
+        'marker': 'buildings_attrs.geojson',
+        'needs':  ['buildings_enriched.geojson'],
+        'us_only': True,
+    },
+
     # ---- Phase 5: after M5 -------------------------------------------------
     {
         'name':   'M6a v1',
