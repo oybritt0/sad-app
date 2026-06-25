@@ -278,8 +278,18 @@ def extract_layer(extent_poly, layer: str, release: str | None = None) -> dict:
                 return dict(_EMPTY)
             raise
         fc = _to_fc(gdf, KEEP_COLS[layer], poly_only=True)
-        if layer == 'buildings' and len(fc['features']) > MAX_BUILDINGS:
-            fc = _cap_buildings(fc)
+        if layer == 'buildings':
+            # Clip buildings to the acquisition extent BEFORE the area-based cap.
+            # _features() should already bound to extent_poly, but some OSM
+            # responses (and older fetch paths) returned footprints well beyond
+            # the canvas, which then got truncated by area (keeping the biggest
+            # across an entire metro instead of the ones inside the SAD). Clipping
+            # by representative-point-in-extent makes the building set match the
+            # canvas regardless of what the fetch returned, so NSI/FEMA joins and
+            # morphology operate on the right footprints.
+            fc = _clip_buildings_to_extent(fc, extent_poly)
+            if len(fc['features']) > MAX_BUILDINGS:
+                fc = _cap_buildings(fc)
         return fc
     raise ValueError(f"unknown layer: {layer}")
 
@@ -293,6 +303,28 @@ def _cap_buildings(fc: dict) -> dict:
     kept = [feats[i] for i in order]
     return {'type': 'FeatureCollection', 'features': kept,
             'truncated': True, 'total': len(feats), 'kept': len(kept)}
+
+
+def _clip_buildings_to_extent(fc: dict, extent_poly) -> dict:
+    """Keep only buildings whose representative point falls inside extent_poly.
+
+    extent_poly is a shapely geometry in EPSG:4326 (the acquisition canvas).
+    Uses representative_point() rather than intersection so footprints that
+    straddle the boundary are kept whole (no slivered geometry) and the
+    operation is fast. A building is 'in' the SAD if its interior point is.
+    """
+    feats = fc.get('features', [])
+    if not feats:
+        return fc
+    try:
+        gdf = gpd.GeoDataFrame.from_features(feats, crs='EPSG:4326')
+        inside = gdf.geometry.representative_point().within(extent_poly)
+        kept = [f for f, keep in zip(feats, inside.tolist()) if keep]
+        return {'type': 'FeatureCollection', 'features': kept}
+    except Exception:
+        # On any geometry error, fall back to the unclipped set rather than
+        # dropping the layer entirely.
+        return fc
 
 
 def walkshed_polygon(drawn_geometry: dict, minutes=(5, 10, 15), speed_m_s: float = 1.35) -> dict:
