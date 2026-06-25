@@ -178,14 +178,12 @@ const state = {
   transitSize: 7,
   walkshedColor: '#7BB661',
   walkshedOpacity: 0.22,
-  buildingColorMode: 'default',  // 'default' | 'dominant' (POI program) | 'by_occupancy' (NSI HAZUS) | 'by_height' (NSI num_story * 3.5m) | 'by_year' (NSI med_yr_blt)
-  // Mode-specific filters; only applied when their mode is the active buildingColorMode.
+  buildingColorMode: 'default',  // 'default' | 'dominant' (POI program) | 'by_occupancy' (NSI HAZUS) | 'by_height' (NSI/FEMA height) | 'by_year' (NSI med_yr_blt)
+  // Compound filters - applied independently of which mode is coloring the map.
+  // Default values match the slider absolute bounds so a "no constraint" state
+  // reads as inactive in the isXxxFilterActive() helpers.
   occupancyFilter: { RES: true, COM: true, IND: true, AGR: true, REL: true, EDU: true, GOV: true, OTHER: true },
-  heightFilter: { min: 3.5, max: 60 },
-  yearFilter:   { min: 1900, max: 2020 },
-  // Mode-specific filters; only applied when their mode is the active buildingColorMode.
-  occupancyFilter: { RES: true, COM: true, IND: true, AGR: true, REL: true, EDU: true, GOV: true, OTHER: true },
-  heightFilter: { min: 3.5, max: 60 },
+  heightFilter: { min: 3.5, max: 110 },
   yearFilter:   { min: 1900, max: 2020 },
   buildingColor: '#4a4a4a',      // the standard building grey (user-adjustable)
   buildingStyle: 'fill',         // 'fill' | 'outline'
