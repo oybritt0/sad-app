@@ -28,6 +28,9 @@ from pathlib import Path
 import numpy as np
 import geopandas as gpd
 from shapely.geometry import shape
+from rasterio.features import rasterize
+from PIL import Image
+from geo_utils import affine_from_geo_bbox
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import module_04c_municipal_context as m4c   # extent resolution (host place)
@@ -361,6 +364,53 @@ def _rewrite_pois_for_m3(fc: dict) -> dict:
         })
     return {'type': 'FeatureCollection', 'features': out_feats}
 
+def _write_figureground_for_drawn(extent_poly, buildings_fc: dict, derived_dir: Path) -> bool:
+    """Rasterize buildings into M2's figureground_mask.npy (and a .png).
+
+    M1 (module_01_image_generator) normally produces these, but for drawn
+    districts save_district writes manifest.json itself which makes M1's
+    marker check skip the run. Lift M1's rasterize block here so M2 / M2b /
+    M2c can run on drawn districts without needing M1.
+
+    Layout matches M1 exactly:
+      - 1080x1080 binary mask, uint8, 1=building/0=void
+      - figureground.png: building=BLACK (0), void=WHITE (255)
+      - figureground_mask.npy: raw mask
+    Returns True on success, False otherwise.
+    """
+    IMAGE_W = 1080
+    IMAGE_H = 1080
+    try:
+        derived_dir.mkdir(parents=True, exist_ok=True)
+        feats = buildings_fc.get('features', []) if isinstance(buildings_fc, dict) else []
+        if not feats:
+            print('  WARN figureground skip: no building features for drawn district')
+            return False
+        bgdf = gpd.GeoDataFrame.from_features(feats, crs='EPSG:4326')
+        minlon, minlat, maxlon, maxlat = extent_poly.bounds
+        bbox = (minlon, minlat, maxlon, maxlat)
+        transform = affine_from_geo_bbox(bbox, IMAGE_W, IMAGE_H)
+        in_frame = bgdf[bgdf.intersects(extent_poly)]
+        valid_geoms = [g for g in in_frame.geometry if g is not None and not g.is_empty]
+        if not valid_geoms:
+            print('  WARN figureground skip: no buildings intersect extent')
+            return False
+        mask = rasterize(
+            [(geom, 1) for geom in valid_geoms],
+            out_shape=(IMAGE_H, IMAGE_W),
+            transform=transform,
+            fill=0,
+            dtype='uint8',
+        )
+        img_array = np.where(mask == 1, 0, 255).astype('uint8')
+        Image.fromarray(img_array, mode='L').save(derived_dir / 'figureground.png')
+        np.save(derived_dir / 'figureground_mask.npy', mask)
+        print(f'  wrote figureground.png + figureground_mask.npy ({len(valid_geoms)} buildings)')
+        return True
+    except Exception as e:
+        print(f'  WARN figureground generation failed: {e}')
+        return False
+
 def save_district(name: str, drawn_geometry: dict, extent_poly, extent_info: dict,
                   data_dir: Path, layers: dict, year: int, api_key: str) -> str:
     """Write source/*.geojson for a new district folder; returns sad_id.
@@ -441,4 +491,17 @@ def save_district(name: str, drawn_geometry: dict, extent_poly, extent_info: dic
         _mdb.write_drawn_buildings(base)
     except Exception as e:
         print(f"  WARN: drawn buildings_enriched generation failed ({e})")
+
+    # Write figureground mask + PNG inline so M2 / M2b / M2c don't need M1.
+    # M1's marker (manifest.json) gets written by save_district above, which
+    # causes M1 to skip; produce M1's CV outputs here from buildings + extent.
+    buildings_fc_for_fg = layers.get('buildings')
+    if buildings_fc_for_fg is None:
+        try:
+            buildings_fc_for_fg = extract_layer(extent_poly, 'buildings')
+        except Exception:
+            buildings_fc_for_fg = None
+    if buildings_fc_for_fg is not None:
+        _write_figureground_for_drawn(extent_poly, buildings_fc_for_fg, base / 'derived')
+
     return sad_id
