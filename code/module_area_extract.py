@@ -30,7 +30,7 @@ import geopandas as gpd
 from shapely.geometry import shape
 from rasterio.features import rasterize
 from PIL import Image
-from geo_utils import affine_from_geo_bbox
+from shared.geo_utils import affine_from_geo_bbox
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import module_04c_municipal_context as m4c   # extent resolution (host place)
