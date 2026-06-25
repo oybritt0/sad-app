@@ -178,7 +178,15 @@ const state = {
   transitSize: 7,
   walkshedColor: '#7BB661',
   walkshedOpacity: 0.22,
-  buildingColorMode: 'default',  // 'default' (grey + red SAD anchors) | 'dominant' (by POI program)
+  buildingColorMode: 'default',  // 'default' | 'dominant' (POI program) | 'by_occupancy' (NSI HAZUS) | 'by_height' (NSI num_story * 3.5m) | 'by_year' (NSI med_yr_blt)
+  // Mode-specific filters; only applied when their mode is the active buildingColorMode.
+  occupancyFilter: { RES: true, COM: true, IND: true, AGR: true, REL: true, EDU: true, GOV: true, OTHER: true },
+  heightFilter: { min: 3.5, max: 60 },
+  yearFilter:   { min: 1900, max: 2020 },
+  // Mode-specific filters; only applied when their mode is the active buildingColorMode.
+  occupancyFilter: { RES: true, COM: true, IND: true, AGR: true, REL: true, EDU: true, GOV: true, OTHER: true },
+  heightFilter: { min: 3.5, max: 60 },
+  yearFilter:   { min: 1900, max: 2020 },
   buildingColor: '#4a4a4a',      // the standard building grey (user-adjustable)
   buildingStyle: 'fill',         // 'fill' | 'outline'
   buildingFillOpacity: 0.92,
@@ -208,6 +216,13 @@ const state = {
   buildLayerToggles();
   buildPoiCategoryFilter();
   buildBuildingTypeFilter();
+  // OSM building-type filter section is now hidden (the NSI occupancy mode
+  // is the primary categorical view). Force all programs ON so the filter
+  // logic at renderBuildings() passes every feature.
+  const _btf = document.getElementById('building-type-filter');
+  if (_btf) _btf.style.display = 'none';
+  ['retail_fb','office','sport','residential','hotel','parking','open_space','other']
+    .forEach(c => { state.buildingProgramOn = state.buildingProgramOn || {}; state.buildingProgramOn[c] = true; });
   buildHeatSwatch();
   wireControls();
   if (state.manifest.sads.length > 0) {
@@ -581,14 +596,238 @@ function wireControls() {
   }
 
   // Building color mode (Anchors = grey + red SAD anchors Â· Dominant POI = program colors)
+function renderBuildingLegend() {
+  const el = document.getElementById('building-legend');
+  if (!el) return;
+  const mode = state.buildingColorMode || 'default';
+  if (mode === 'default') {
+    el.innerHTML = '';
+    el.style.display = 'none';
+    return;
+  }
+  el.style.display = '';
+
+  // All three filter sections always rendered. The ACTIVE mode is the one that
+  // colors the map; filters from inactive modes still apply (compound filtering).
+  // Each section has its own "clear" link; top-level "clear all" appears when
+  // any filter is active.
+  const occActive = isOccupancyFilterActive();
+  const hgtActive = isHeightFilterActive();
+  const yrActive  = isYearFilterActive();
+  const anyActive = occActive || hgtActive || yrActive;
+
+  const clearAllBar = anyActive
+    ? '<div style="display:flex;justify-content:flex-end;margin-bottom:6px;">'
+      + '<span class="link" id="bldg-clear-all" style="font-size:10px;cursor:pointer;color:var(--ink-trace);text-decoration:underline;">clear all filters</span>'
+      + '</div>'
+    : '';
+
+  el.innerHTML = clearAllBar
+    + renderOccupancySection(mode === 'by_occupancy', occActive)
+    + renderHeightSection(mode === 'by_height', hgtActive)
+    + renderYearSection(mode === 'by_year', yrActive);
+
+  // Wire occupancy checkboxes
+  el.querySelectorAll('label[data-occ]').forEach(lbl => {
+    const code = lbl.getAttribute('data-occ');
+    const cb = lbl.querySelector('input');
+    cb.addEventListener('change', () => {
+      state.occupancyFilter[code] = cb.checked;
+      renderBuildingLegend();   // re-render to refresh active-state styling
+      render();
+    });
+  });
+  // Wire range sliders if they exist
+  wireRangeSlider('height');
+  wireRangeSlider('year');
+  // Wire per-section clear links
+  const occClear = document.getElementById('bldg-clear-occ');
+  if (occClear) occClear.addEventListener('click', () => {
+    Object.keys(state.occupancyFilter).forEach(k => state.occupancyFilter[k] = true);
+    renderBuildingLegend(); render();
+  });
+  const hgtClear = document.getElementById('bldg-clear-hgt');
+  if (hgtClear) hgtClear.addEventListener('click', () => {
+    state.heightFilter.min = 3.5; state.heightFilter.max = 110;
+    renderBuildingLegend(); render();
+  });
+  const yrClear = document.getElementById('bldg-clear-yr');
+  if (yrClear) yrClear.addEventListener('click', () => {
+    state.yearFilter.min = 1900; state.yearFilter.max = 2020;
+    renderBuildingLegend(); render();
+  });
+  // Wire top-level clear-all
+  const clearAll = document.getElementById('bldg-clear-all');
+  if (clearAll) clearAll.addEventListener('click', () => {
+    Object.keys(state.occupancyFilter).forEach(k => state.occupancyFilter[k] = true);
+    state.heightFilter.min = 3.5; state.heightFilter.max = 110;
+    state.yearFilter.min = 1900; state.yearFilter.max = 2020;
+    renderBuildingLegend(); render();
+  });
+
+  // Expose the nested legend function globally so selectSad() can find it.
+  // renderBuildingLegend was accidentally declared inside wireControls
+  // (block-scoped), making it unreachable from selectSad's module scope.
+  window.renderBuildingLegend = renderBuildingLegend;
+}
+
+// Status helpers -----------------------------------------------------------
+function isOccupancyFilterActive() {
+  const f = state.occupancyFilter || {};
+  return Object.values(f).some(v => v === false);
+}
+function isHeightFilterActive() {
+  const f = state.heightFilter || {};
+  return f.min > 3.5 || f.max < 110;
+}
+function isYearFilterActive() {
+  const f = state.yearFilter || {};
+  return f.min > 1900 || f.max < 2020;
+}
+
+// Section renderers --------------------------------------------------------
+function sectionHeader(label, active, isMode, clearId) {
+  const modeBadge = isMode
+    ? '<span style="font-size:9px;background:var(--ink);color:var(--bg);padding:1px 5px;border-radius:2px;margin-left:6px;letter-spacing:0.04em;">COLORING</span>'
+    : '';
+  const filterBadge = active && !isMode
+    ? '<span style="font-size:9px;background:var(--ink-trace);color:var(--bg);padding:1px 5px;border-radius:2px;margin-left:6px;letter-spacing:0.04em;">FILTER ON</span>'
+    : '';
+  const clearLink = active
+    ? '<span class="link" id="' + clearId + '" style="font-size:9.5px;cursor:pointer;color:var(--ink-trace);text-decoration:underline;margin-left:auto;">clear</span>'
+    : '';
+  const opacity = (active || isMode) ? 1 : 0.7;
+  return '<div style="display:flex;align-items:center;margin:14px 0 5px 0;font-size:10px;text-transform:uppercase;letter-spacing:0.06em;font-weight:600;color:var(--ink);opacity:' + opacity + ';">'
+    + '<span>' + label + '</span>'
+    + modeBadge + filterBadge + clearLink + '</div>';
+}
+
+function renderOccupancySection(isMode, active) {
+  const items = [
+    ['RES',   '#5fb3a1', 'Residential'],
+    ['COM',   '#e08550', 'Commercial'],
+    ['IND',   '#6e7787', 'Industrial'],
+    ['AGR',   '#8b9a3d', 'Agricultural'],
+    ['REL',   '#9b6db3', 'Religious / non-profit'],
+    ['EDU',   '#5b8cc4', 'Education'],
+    ['GOV',   '#d4a437', 'Government'],
+    ['OTHER', '#4a4a4a', 'Unknown / no NSI match'],
+  ];
+  const dim = !(isMode || active);
+  return sectionHeader('HAZUS occupancy', active, isMode, 'bldg-clear-occ')
+    + '<div style="opacity:' + (dim ? 0.7 : 1) + ';">'
+    + items.map(([code, c, l]) => {
+        const on = state.occupancyFilter[code] !== false;
+        return '<label data-occ="' + code + '" style="display:flex;align-items:center;gap:6px;margin:2px 0;cursor:pointer;opacity:' + (on ? 1 : 0.35) + ';">'
+          + '<input type="checkbox" ' + (on ? 'checked' : '') + ' style="margin:0;">'
+          + '<span style="display:inline-block;width:10px;height:10px;background:' + c + ';border:0.5px solid #555;"></span>'
+          + '<span style="color:var(--ink);">' + l + '</span></label>';
+      }).join('')
+    + '</div>';
+}
+
+function renderHeightSection(isMode, active) {
+  const dim = !(isMode || active);
+  let body = sectionHeader('Building height (m)', active, isMode, 'bldg-clear-hgt');
+  body += '<div style="opacity:' + (dim ? 0.7 : 1) + ';">';
+  if (isMode) {
+    body += buildGradientStrip('viridis')
+      + '<div style="display:flex;justify-content:space-between;margin-top:3px;font-size:9.5px;color:var(--ink-trace);">'
+      + '<span>~1 story (3m)</span><span>~22+ stories (80m+)</span></div>';
+  }
+  body += buildRangeSlider('height', 3.5, 110, 0.5, state.heightFilter.min, state.heightFilter.max, 'm');
+  body += '</div>';
+  return body;
+}
+
+function renderYearSection(isMode, active) {
+  const dim = !(isMode || active);
+  const feats = (state.data.buildings && state.data.buildings.features) || [];
+  const yearVals = new Set();
+  feats.forEach(d => {
+    const v = (d.properties || {}).med_yr_blt;
+    if (v != null && !isNaN(v)) yearVals.add(Math.round(v));
+  });
+  const sortedYears = Array.from(yearVals).sort((a, b) => a - b);
+  const yearListStr = sortedYears.length ? sortedYears.join(', ') : '(no NSI year data)';
+  const eras = [
+    ['#a85d3a', 'Pre-war (≤1945)'],
+    ['#9ca96b', 'Mid-century (1946–1980)'],
+    ['#4a9b8f', 'Contemporary (1981+)'],
+    ['#4a4a4a', 'Unknown'],
+  ];
+  let body = sectionHeader('Year built · era bands', active, isMode, 'bldg-clear-yr');
+  body += '<div style="opacity:' + (dim ? 0.7 : 1) + ';">';
+  if (isMode) {
+    body += eras.map(([c, l]) =>
+        '<div style="display:flex;align-items:center;gap:6px;margin:2px 0;">'
+        + '<span style="display:inline-block;width:10px;height:10px;background:' + c + ';border:0.5px solid #555;"></span>'
+        + '<span style="color:var(--ink);">' + l + '</span></div>'
+      ).join('')
+      + '<div style="margin-top:8px;font-size:9.5px;color:var(--ink-faint);line-height:1.4;">NSI year-built is parcel-inferred and heavily binned. Actual values present in this district: <span style="color:var(--ink-trace);">' + yearListStr + '</span></div>';
+  }
+  body += buildRangeSlider('year', 1900, 2020, 1, state.yearFilter.min, state.yearFilter.max, '');
+  body += '</div>';
+  return body;
+}
+
+// Two stacked native range inputs for min and max. Simple, zero-dependency.
+function buildRangeSlider(name, absMin, absMax, step, curMin, curMax, suffix) {
+  return ''
+    + '<div style="margin-top:10px;font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--ink-trace);">Filter range</div>'
+    + '<div style="display:flex;justify-content:space-between;font-size:10.5px;color:var(--ink);margin:2px 0 4px 0;">'
+    + '<span id="' + name + '-min-lbl">' + curMin + suffix + '</span>'
+    + '<span id="' + name + '-max-lbl">' + curMax + suffix + '</span></div>'
+    + '<input id="' + name + '-min" type="range" min="' + absMin + '" max="' + absMax + '" step="' + step + '" value="' + curMin + '" style="width:100%;display:block;margin:2px 0;">'
+    + '<input id="' + name + '-max" type="range" min="' + absMin + '" max="' + absMax + '" step="' + step + '" value="' + curMax + '" style="width:100%;display:block;margin:2px 0;">';
+}
+
+function wireRangeSlider(name) {
+  const minEl = document.getElementById(name + '-min');
+  const maxEl = document.getElementById(name + '-max');
+  const minLbl = document.getElementById(name + '-min-lbl');
+  const maxLbl = document.getElementById(name + '-max-lbl');
+  if (!minEl || !maxEl) return;
+  const filterKey = name + 'Filter';
+  const suffix = (name === 'height') ? 'm' : '';
+  function update() {
+    let lo = parseFloat(minEl.value);
+    let hi = parseFloat(maxEl.value);
+    if (lo > hi) { // clamp - never let min exceed max
+      if (this === minEl) { hi = lo; maxEl.value = hi; }
+      else { lo = hi; minEl.value = lo; }
+    }
+    state[filterKey].min = lo;
+    state[filterKey].max = hi;
+    minLbl.textContent = (Math.round(lo * 10) / 10) + suffix;
+    maxLbl.textContent = (Math.round(hi * 10) / 10) + suffix;
+    render();
+  }
+  minEl.addEventListener('input', update);
+  maxEl.addEventListener('input', update);
+}
+
+function buildGradientStrip(scale) {
+  // Render a 9-stop CSS linear-gradient inline for the legend bar.
+  const interp = (scale === 'viridis') ? d3.interpolateViridis
+                : (scale === 'puor_rev') ? (t => d3.interpolatePuOr(1 - t))
+                : d3.interpolateViridis;
+  const stops = [];
+  for (let i = 0; i <= 8; i++) stops.push(interp(i / 8));
+  const grad = 'linear-gradient(to right, ' + stops.join(', ') + ')';
+  return '<div style="height:10px;background:' + grad + ';border:0.5px solid #555;"></div>';
+}
   document.querySelectorAll('input[name="bmode"]').forEach(el => {
     el.addEventListener('change', e => {
       if (e.target.checked) {
         state.buildingColorMode = e.target.value;
+        renderBuildingLegend();
         render();
       }
     });
   });
+  // Initial render of the building legend (in case the current mode isn't default)
+  renderBuildingLegend();
   // Standard building color (affects the grey base only; SAD anchors stay red)
   const bColor = document.getElementById('building-color');
   if (bColor) {
@@ -723,6 +962,12 @@ async function selectSad(sadId) {
   }
 
   document.getElementById('loading').classList.add('hide');
+  // Re-render the building legend so the year-built list (and any mode-aware
+  // bits) reflect the newly-loaded district's data, not the previous one.
+  // Uses window. lookup because renderBuildingLegend was accidentally declared
+  // inside wireControls (block-scoped) - selectSad runs in module scope and
+  // can only see it via the explicit window exposure set at wireControls' end.
+  if (typeof window.renderBuildingLegend === 'function') window.renderBuildingLegend();
   render();
 }
 
@@ -1368,18 +1613,109 @@ function renderBuildings(g, gj) {
                  : (buildingTagProgram(d.properties || {}) || 'other');
     return bProgOn[prog] !== false;
   });
-  const dominant = state.buildingColorMode === 'dominant';
+
+  // NSI/FEMA filters: applied INDEPENDENTLY of which mode is coloring the map.
+  // This lets a user filter by occupancy AND year AND height simultaneously
+  // (e.g. "pre-war commercial buildings between 10-30m"). Filters are only
+  // applied if they're actively constraining (any non-default state).
+  const _mode = state.buildingColorMode || 'default';
+  if (_mode !== 'default') {
+    const occF = state.occupancyFilter || {};
+    const hf = state.heightFilter || {};
+    const yf = state.yearFilter || {};
+    const occActive = Object.values(occF).some(v => v === false);
+    const hgtActive = (hf.min != null && hf.min > 3.5) || (hf.max != null && hf.max < 110);
+    const yrActive  = (yf.min != null && yf.min > 1900) || (yf.max != null && yf.max < 2020);
+    // Occupancy filter
+    if (occActive) {
+      feats = feats.filter(d => {
+        const occ = (d.properties || {}).occtype;
+        if (!occ) return occF.OTHER !== false;
+        const m = String(occ).match(/^([A-Z]+)/);
+        const code = m ? m[1] : 'OTHER';
+        return occF[code] !== false;
+      });
+    }
+    // Height filter
+    if (hgtActive) {
+      feats = feats.filter(d => {
+        const p = d.properties || {};
+        const v = (p.fema_height != null) ? p.fema_height : p.height_m_est;
+        if (v == null || isNaN(v)) return false;
+        return v >= hf.min && v <= hf.max;
+      });
+    }
+    // Year filter
+    if (yrActive) {
+      feats = feats.filter(d => {
+        const v = (d.properties || {}).med_yr_blt;
+        if (v == null || isNaN(v)) return false;
+        return v >= yf.min && v <= yf.max;
+      });
+    }
+  }
+  const mode = state.buildingColorMode || 'default';
+  const dominant = mode === 'dominant';
+  const byOccupancy = mode === 'by_occupancy';
+  const byHeight = mode === 'by_height';
+  const byYear = mode === 'by_year';
   const grey = state.buildingColor || '#4a4a4a';
   const outline = state.buildingStyle === 'outline';
   const fillOpac = state.buildingFillOpacity != null ? state.buildingFillOpacity : 0.92;
   const owt = state.buildingOutlineWeight != null ? state.buildingOutlineWeight : 0.6;
   const ocol = state.buildingOutlineColor || '#888888';
 
+  // HAZUS occupancy class -> color (grouped by first letter of code:
+  // RES=teal, COM=orange, IND=slate, AGR=olive, REL=purple, EDU=blue,
+  // GOV=mustard, others=grey)
+  const OCC_COLORS = {
+    RES: '#5fb3a1', COM: '#e08550', IND: '#6e7787',
+    AGR: '#8b9a3d', REL: '#9b6db3', EDU: '#5b8cc4',
+    GOV: '#d4a437',
+  };
+  function occColor(occtype) {
+    if (!occtype) return grey;
+    const m = String(occtype).match(/^([A-Z]+)/);
+    return (m && OCC_COLORS[m[1]]) || grey;
+  }
+
+  // Continuous ramps for height & year (cool->warm). Domains capped at
+  // values useful for downtown SADs; outliers clamp.
+  const HEIGHT_DOMAIN = [3, 80];  // ~1 story to ~22 stories; clamps above
+  const YEAR_DOMAIN = [1900, 2020];
+  function heightColor(v) {
+    if (v == null || isNaN(v)) return grey;
+    const t = Math.max(0, Math.min(1, (v - HEIGHT_DOMAIN[0]) / (HEIGHT_DOMAIN[1] - HEIGHT_DOMAIN[0])));
+    return d3.interpolateViridis(t);
+  }
+  // Year built: NSI data is heavily binned at the parcel level (often just a
+  // few default years like 1938/1946/2000 per region). Use discrete era bands
+  // rather than a continuous gradient to honestly represent the granularity.
+  const YEAR_ERA_COLORS = {
+    prewar:        '#a85d3a',   // rust - pre-1946
+    midcentury:    '#9ca96b',   // sage - 1946-1980
+    contemporary:  '#4a9b8f',   // teal - 1981+
+  };
+  function yearEraOf(v) {
+    if (v == null || isNaN(v)) return null;
+    if (v <= 1945) return 'prewar';
+    if (v <= 1980) return 'midcentury';
+    return 'contemporary';
+  }
+  function yearColor(v) {
+    const era = yearEraOf(v);
+    return era ? YEAR_ERA_COLORS[era] : grey;
+  }
+
   function baseColor(d) {
+    const props = d.properties || {};
     if (dominant) {
-      const p = buildingTagProgram(d.properties || {});
-      return p ? PROGRAM_COLORS[p] : grey;   // untagged -> neutral grey
+      const p = buildingTagProgram(props);
+      return p ? PROGRAM_COLORS[p] : grey;
     }
+    if (byOccupancy) return occColor(props.occtype);
+    if (byHeight) return heightColor(props.fema_height != null ? props.fema_height : props.height_m_est);
+    if (byYear) return yearColor(props.med_yr_blt);
     return grey;
   }
 
@@ -1390,10 +1726,14 @@ function renderBuildings(g, gj) {
     // Stroke follows the active color mode (program colors in Dominant POI).
     sel.attr('fill', 'none')
        .attr('stroke', d => {
+         const props = d.properties || {};
          if (dominant) {
-           const p = buildingTagProgram(d.properties || {});
-           return p ? PROGRAM_COLORS[p] : ocol;   // untagged -> neutral outline
+           const p = buildingTagProgram(props);
+           return p ? PROGRAM_COLORS[p] : ocol;
          }
+         if (byOccupancy) return occColor(props.occtype) || ocol;
+         if (byHeight)    return heightColor(props.fema_height != null ? props.fema_height : props.height_m_est) || ocol;
+         if (byYear)      return yearColor(props.med_yr_blt) || ocol;
          return ocol;
        })
        .attr('stroke-width', owt)
@@ -1817,26 +2157,85 @@ function buildExportChrome(sad, mapW, mapH) {
   if (V.sad_boundary) dashRow(state.boundaryColor || '#f1c50c', 'SAD boundary');
 
   if (V.buildings && state.data.buildings) {
+    const mode = state.buildingColorMode || 'default';
 
-    if (state.buildingColorMode === 'dominant') {
-      blockRow('#cccccc', 'Buildings â€” by program', { outline: outlineMode, stroke: '#bbb', strokeWidth: 0.5 });
-      ROSSETTI_ORDER.forEach(c => {
-        // indent program swatches slightly under the buildings header
+    if (mode === 'by_occupancy') {
+      // HAZUS occupancy buckets (NSI) - categorical legend
+      blockRow('#cccccc', 'Buildings â€” by occupancy (NSI)', { outline: outlineMode, stroke: '#bbb', strokeWidth: 0.5 });
+      const occBuckets = [
+        ['RES', '#5fb3a1', 'Residential'],
+        ['COM', '#e08550', 'Commercial'],
+        ['IND', '#6e7787', 'Industrial'],
+        ['AGR', '#8b9a3d', 'Agricultural'],
+        ['REL', '#9b6db3', 'Religious / non-profit'],
+        ['EDU', '#5b8cc4', 'Education'],
+        ['GOV', '#d4a437', 'Government'],
+      ];
+      occBuckets.forEach(([code, color, label]) => {
         const yc = y;
         legend.appendChild(svgEl('rect', {
           x: cx + 10, y: yc, width: SW - 4, height: SW - 4,
-          fill: outlineMode ? 'none' : PROGRAM_COLORS[c],
-          stroke: PROGRAM_COLORS[c], 'stroke-width': outlineMode ? 1.4 : 0,
+          fill: outlineMode ? 'none' : color,
+          stroke: color, 'stroke-width': outlineMode ? 1.4 : 0,
         }));
         legend.appendChild(svgEl('text', {
           x: LBL + 6, y: yc + (SW - 4) * 0.78, 'font-family': SANS,
           'font-size': 10.5, fill: '#444',
-        }, PROGRAM_LABELS[c]));
+        }, label));
         y += ROW - 4;
       });
+    } else if (mode === 'by_height') {
+      // Continuous gradient: height in meters
+      blockRow('#cccccc', 'Buildings â€” by height (m)', { outline: outlineMode, stroke: '#bbb', strokeWidth: 0.5 });
+      drawGradientBar('viridis', 3.5, 60, 'm', '~1 story', '~17+ stories');
+    } else if (mode === 'by_year') {
+      // Continuous gradient: year built
+      blockRow('#cccccc', 'Buildings â€” by year built', { outline: outlineMode, stroke: '#bbb', strokeWidth: 0.5 });
+      drawGradientBar('puor_rev', 1900, 2020, '', 'pre-1900', '2020+');
     } else {
+      // Default mode (Standard) - just shows the building color
       blockRow(state.buildingColor || '#4a4a4a', 'Buildings', { outline: outlineMode });
     }
+  }
+
+  // Helper: draw a continuous gradient bar legend (for height/year modes)
+  function drawGradientBar(scale, domainMin, domainMax, suffix, lowLabel, highLabel) {
+    const barW = 100;
+    const barH = 8;
+    const barX = cx + 10;
+    const barY = y + 2;
+    // Build a gradient id unique per call
+    const gradId = 'legend-grad-' + scale + '-' + Math.floor(Math.random() * 1e6);
+    const defs = svgEl('defs', {});
+    const grad = svgEl('linearGradient', { id: gradId, x1: '0%', y1: '0%', x2: '100%', y2: '0%' });
+    // Sample 8 stops along the ramp
+    const interp = (scale === 'viridis') ? d3.interpolateViridis :
+                   (scale === 'puor_rev') ? (t => d3.interpolatePuOr(1 - t)) :
+                   d3.interpolateViridis;
+    for (let i = 0; i <= 8; i++) {
+      const t = i / 8;
+      grad.appendChild(svgEl('stop', {
+        offset: (t * 100) + '%',
+        'stop-color': interp(t),
+      }));
+    }
+    defs.appendChild(grad);
+    legend.appendChild(defs);
+    legend.appendChild(svgEl('rect', {
+      x: barX, y: barY, width: barW, height: barH,
+      fill: 'url(#' + gradId + ')',
+      stroke: '#888', 'stroke-width': 0.5,
+    }));
+    // Low + high labels under the bar
+    legend.appendChild(svgEl('text', {
+      x: barX, y: barY + barH + 11, 'font-family': SANS,
+      'font-size': 9.5, fill: '#666',
+    }, lowLabel + ' (' + domainMin + suffix + ')'));
+    legend.appendChild(svgEl('text', {
+      x: barX + barW, y: barY + barH + 11, 'font-family': SANS,
+      'font-size': 9.5, fill: '#666', 'text-anchor': 'end',
+    }, highLabel + ' (' + domainMax + suffix + ')'));
+    y += ROW + 10;
   }
   if (V.parks && state.data.parks)
     blockRow('#A8D5BA', 'Parks / open space', { outline: outlineMode, opacity: state.buildingFillOpacity });

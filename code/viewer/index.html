@@ -181,12 +181,15 @@
         <h2>Building color</h2>
         <div class="seg" id="building-mode-toggle">
           <label><input type="radio" name="bmode" value="default" checked>Standard</label>
-          <label><input type="radio" name="bmode" value="dominant">Building use (OSM)</label>
+          <label><input type="radio" name="bmode" value="by_occupancy">Occupancy (NSI)</label>
+          <label><input type="radio" name="bmode" value="by_height">Height</label>
+          <label><input type="radio" name="bmode" value="by_year">Year built</label>
         </div>
         <div class="color-row">
           <span class="row-label">Building</span>
           <input type="color" id="building-color" value="#4a4a4a">
         </div>
+        <div id="building-legend" style="margin-top:10px;font-family:var(--mono);font-size:10.5px;color:var(--ink-trace);"></div>
       </section>
 
       <section>
