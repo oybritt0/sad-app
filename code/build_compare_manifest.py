@@ -322,6 +322,23 @@ def build_sad_record(data_dir: Path, sad_dir: Path, embedding: dict, shared_typ:
     ))
 
     place_card = find_place_card(data_dir, sad_id)
+    # program_real: NSI structure-occupancy shares (sqft) for the BY AREA donut
+    program_real = None
+    _sdir = data_dir / sad_id / 'derived' / 'structures'
+    if _sdir.is_dir():
+        _cands = sorted(_sdir.glob('nsi_structures_*.json'),
+                        key=lambda p: p.stat().st_mtime, reverse=True)
+        if _cands:
+            try:
+                _nd = json.loads(_cands[0].read_text(encoding='utf-8'))
+            except Exception:
+                _nd = None
+            if _nd and _nd.get('available', True):
+                _ss = (_nd.get('occupancy_share') or {}).get('shares_sqft')
+                if _ss and sum(float(v) for v in _ss.values()) > 0:
+                    program_real = {b: float(_ss.get(b, 0.0)) for b in (
+                        'sport', 'residential', 'hotel', 'retail_food_entertainment',
+                        'office', 'parking', 'open_space', 'other')}
 
     # Flatten the one walkshed budget the catalog references (10-min).
     walkshed_flat = {}
@@ -368,6 +385,7 @@ def build_sad_record(data_dir: Path, sad_dir: Path, embedding: dict, shared_typ:
         'bbox': _bbox,
         'created': (source / 'extent.json').exists(),
         'program': program,
+        'program_real': program_real,
         'amenity': {
             'total_points_in_sad': (amenity or {}).get('total_points_in_sad'),
             'category_counts': (amenity or {}).get('category_counts'),

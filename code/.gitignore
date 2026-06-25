@@ -8,3 +8,9 @@ cache/
 *.bak
 *.bak2
 *.bak_*
+*_BACKUP_*.py
+*.bak.py
+patch_*.py
+*.b64.txt
+compare.html
+SAD_restart_*.md

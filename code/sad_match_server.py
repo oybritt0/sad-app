@@ -473,13 +473,18 @@ def make_app(data_dir: Path, api_key: str, year: int) -> "Flask":
         if _req.path == '/health':
             return None
         a = _req.authorization
-        if a and _sad_check_auth(a.username, a.password):
+        if _sad_check_auth(a.username if a else '', a.password if a else ''):
             return None
         return _Response('Authentication required', 401,
                          {'WWW-Authenticate': 'Basic realm="SAD Toolkit"'})
     # --- end basic auth ---
     corpus = Corpus(data_dir)
     _resume_interrupted(data_dir)
+    try:
+        import program_match as _pm
+        _pm.register(app, data_dir)
+    except Exception as e:
+        print(f"  [warn] program match not wired: {e}")
     print(f"  corpus loaded: {len(corpus.records)} SADs Â· matching on {len(corpus.feat_present)} demographic dims")
 
     @app.after_request
@@ -702,6 +707,12 @@ def make_app(data_dir: Path, api_key: str, year: int) -> "Flask":
             return jsonify({"ok": True, "sad_id": sad_id, **json.loads(p.read_text())})
         except Exception as e:
             return jsonify({"ok": False, "error": str(e)}), 500
+
+    try:
+        import structure_match
+        structure_match.register(app, data_dir)
+    except Exception as e:
+        print(f"  [warn] structure match not wired: {e}")
 
     return app
 
