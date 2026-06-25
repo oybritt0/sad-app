@@ -22,6 +22,45 @@ const ROSSETTI_ORDER = [
   'hotel', 'parking', 'open_space', 'other',
 ];
 
+// HAZUS occupancy sub-buckets. Only RES/COM/IND expand into sub-types; other
+// families (AGR/REL/EDU/GOV) have too few codes to be worth drilling into.
+// occResolve() maps a full occtype like "RES1-2SWB" or "COM10" to its family
+// ("RES"/"COM") and a merged sub-bucket key ("RES1"/"COM5"). The RES1-* single-
+// family variants (story/basement encoded) all collapse to RES1 - that detail
+// lives in Height mode, not here, to keep the legend legible.
+const OCC_SUB_MAP = {
+  RES1:'RES1', RES2:'RES2', RES3:'RES3', RES4:'RES4', RES5:'RES4', RES6:'RES4',
+  COM1:'COM1', COM2:'COM2', COM3:'COM2', COM4:'COM4',
+  COM5:'COM5', COM6:'COM5', COM7:'COM5', COM8:'COM8', COM9:'COM8', COM10:'COM5',
+  IND1:'IND1', IND2:'IND2', IND3:'IND1', IND4:'IND1', IND5:'IND1', IND6:'IND1',
+};
+const OCC_SUB_LABELS = {
+  RES1:'Single-family', RES3:'Multi-family', RES4:'Hotel / institutional', RES2:'Mobile / manuf.',
+  COM1:'Retail', COM4:'Office', COM8:'Entertainment', COM2:'Wholesale / service', COM5:'Medical / civic / parking',
+  IND2:'Light industrial', IND1:'Heavy / other',
+};
+const OCC_SUB_BUCKETS = {
+  RES:['RES1','RES3','RES4','RES2'],
+  COM:['COM1','COM4','COM8','COM2','COM5'],
+  IND:['IND2','IND1'],
+};
+const OCC_SUB_COLORS = {
+  RES1:'#8fd4c2', RES3:'#5fb3a1', RES4:'#3d8a7a', RES2:'#2a6359',
+  COM1:'#f0a878', COM4:'#e08550', COM8:'#c46a3a', COM2:'#a65520', COM5:'#d4a437',
+  IND2:'#9aa3ad', IND1:'#6e7787',
+};
+const OCC_EXPANDABLE = ['RES','COM','IND'];
+// "RES1-2SWB" -> {family:'RES', sub:'RES1'}; "COM10" -> {family:'COM', sub:'COM5'};
+// the \d+ is greedy so COM10 reads as COM10 (not COM1) before the sub-map lookup.
+function occResolve(occtype) {
+  if (!occtype) return { family:'OTHER', sub:null };
+  const fm = String(occtype).match(/^([A-Z]+)/);
+  const family = fm ? fm[1] : 'OTHER';
+  const cm = String(occtype).match(/^([A-Z]+\d+)/);
+  const code = cm ? cm[1] : family;
+  return { family, sub: OCC_SUB_MAP[code] || null };
+}
+
 // POI surfaces use POI_CATEGORIES, NOT ROSSETTI_ORDER. Residential is excluded:
 // Overture residential POIs are too sparse/inconsistent. Residential is sourced
 // from the OSM `building` tag (see buildingProgram + Module 3b), so it stays in
@@ -183,6 +222,14 @@ const state = {
   // Default values match the slider absolute bounds so a "no constraint" state
   // reads as inactive in the isXxxFilterActive() helpers.
   occupancyFilter: { RES: true, COM: true, IND: true, AGR: true, REL: true, EDU: true, GOV: true, OTHER: true },
+  // Sub-bucket filter flags (only consulted when the family is expanded).
+  occupancySubFilter: {
+    RES1: true, RES3: true, RES4: true, RES2: true,
+    COM1: true, COM4: true, COM8: true, COM2: true, COM5: true,
+    IND2: true, IND1: true,
+  },
+  // Which expandable families are currently drilled-open in the legend.
+  occExpanded: { RES: false, COM: false, IND: false },
   heightFilter: { min: 3.5, max: 110 },
   yearFilter:   { min: 1900, max: 2020 },
   buildingColor: '#4a4a4a',      // the standard building grey (user-adjustable)
@@ -625,7 +672,7 @@ function renderBuildingLegend() {
     + renderHeightSection(mode === 'by_height', hgtActive)
     + renderYearSection(mode === 'by_year', yrActive);
 
-  // Wire occupancy checkboxes
+  // Wire occupancy family checkboxes
   el.querySelectorAll('label[data-occ]').forEach(lbl => {
     const code = lbl.getAttribute('data-occ');
     const cb = lbl.querySelector('input');
@@ -633,6 +680,26 @@ function renderBuildingLegend() {
       state.occupancyFilter[code] = cb.checked;
       renderBuildingLegend();   // re-render to refresh active-state styling
       render();
+    });
+  });
+  // Wire occupancy sub-bucket checkboxes (visible only when family expanded)
+  el.querySelectorAll('label[data-occ-sub]').forEach(lbl => {
+    const sk = lbl.getAttribute('data-occ-sub');
+    const cb = lbl.querySelector('input');
+    cb.addEventListener('change', () => {
+      state.occupancySubFilter[sk] = cb.checked;
+      renderBuildingLegend();
+      render();
+    });
+  });
+  // Wire expand/collapse carets on RES/COM/IND
+  el.querySelectorAll('.occ-caret[data-occ-expand]').forEach(car => {
+    const fam = car.getAttribute('data-occ-expand');
+    car.addEventListener('click', (e) => {
+      e.preventDefault(); e.stopPropagation();
+      state.occExpanded[fam] = !state.occExpanded[fam];
+      renderBuildingLegend();
+      render();   // recolor map: expanded family shows sub-shades
     });
   });
   // Wire range sliders if they exist
@@ -672,7 +739,15 @@ function renderBuildingLegend() {
 // Status helpers -----------------------------------------------------------
 function isOccupancyFilterActive() {
   const f = state.occupancyFilter || {};
-  return Object.values(f).some(v => v === false);
+  if (Object.values(f).some(v => v === false)) return true;
+  // Also active if any sub-bucket is off within an expanded family.
+  const sf = state.occupancySubFilter || {};
+  const exp = state.occExpanded || {};
+  return Object.keys(sf).some(sk => {
+    if (sf[sk] !== false) return false;
+    const fam = (sk.match(/^([A-Z]+)/) || [])[1];
+    return fam && exp[fam];
+  });
 }
 function isHeightFilterActive() {
   const f = state.heightFilter || {};
@@ -712,15 +787,39 @@ function renderOccupancySection(isMode, active) {
     ['OTHER', '#4a4a4a', 'Unknown / no NSI match'],
   ];
   const dim = !(isMode || active);
+  const exp = state.occExpanded || {};
+  const subF = state.occupancySubFilter || {};
+
+  const familyRow = (code, c, l) => {
+    const on = state.occupancyFilter[code] !== false;
+    const canExpand = OCC_EXPANDABLE.indexOf(code) !== -1;
+    const caret = canExpand
+      ? '<span class="occ-caret" data-occ-expand="' + code + '" title="show sub-types" style="display:inline-block;width:14px;text-align:center;cursor:pointer;color:var(--ink);font-size:11px;user-select:none;">' + (exp[code] ? '\u25bc' : '\u25b6') + '</span>'
+      : '<span style="display:inline-block;width:12px;"></span>';
+    const row = '<div style="display:flex;align-items:center;gap:4px;margin:2px 0;">'
+      + caret
+      + '<label data-occ="' + code + '" style="display:flex;align-items:center;gap:6px;cursor:pointer;flex:1;opacity:' + (on ? 1 : 0.35) + ';">'
+      + '<input type="checkbox" ' + (on ? 'checked' : '') + ' style="margin:0;">'
+      + '<span style="display:inline-block;width:10px;height:10px;background:' + c + ';border:0.5px solid #555;"></span>'
+      + '<span style="color:var(--ink);">' + l + '</span></label>'
+      + '</div>';
+    if (!canExpand || !exp[code]) return row;
+    // Drilled-open: indented sub-bucket rows for this family.
+    const subs = (OCC_SUB_BUCKETS[code] || []).map(sk => {
+      const son = subF[sk] !== false;
+      const sc = OCC_SUB_COLORS[sk] || c;
+      const sl = OCC_SUB_LABELS[sk] || sk;
+      return '<label data-occ-sub="' + sk + '" style="display:flex;align-items:center;gap:6px;margin:1px 0 1px 28px;cursor:pointer;opacity:' + (son ? 1 : 0.35) + ';">'
+        + '<input type="checkbox" ' + (son ? 'checked' : '') + ' style="margin:0;">'
+        + '<span style="display:inline-block;width:9px;height:9px;background:' + sc + ';border:0.5px solid #555;"></span>'
+        + '<span style="color:var(--ink-trace);font-size:10px;">' + sl + '</span></label>';
+    }).join('');
+    return row + subs;
+  };
+
   return sectionHeader('HAZUS occupancy', active, isMode, 'bldg-clear-occ')
     + '<div style="opacity:' + (dim ? 0.7 : 1) + ';">'
-    + items.map(([code, c, l]) => {
-        const on = state.occupancyFilter[code] !== false;
-        return '<label data-occ="' + code + '" style="display:flex;align-items:center;gap:6px;margin:2px 0;cursor:pointer;opacity:' + (on ? 1 : 0.35) + ';">'
-          + '<input type="checkbox" ' + (on ? 'checked' : '') + ' style="margin:0;">'
-          + '<span style="display:inline-block;width:10px;height:10px;background:' + c + ';border:0.5px solid #555;"></span>'
-          + '<span style="color:var(--ink);">' + l + '</span></label>';
-      }).join('')
+    + items.map(([code, c, l]) => familyRow(code, c, l)).join('')
     + '</div>';
 }
 
@@ -1621,17 +1720,31 @@ function renderBuildings(g, gj) {
     const occF = state.occupancyFilter || {};
     const hf = state.heightFilter || {};
     const yf = state.yearFilter || {};
-    const occActive = Object.values(occF).some(v => v === false);
+    const _subF = state.occupancySubFilter || {};
+    const _exp = state.occExpanded || {};
+    // Occupancy filter is active if any family is off, OR any sub-bucket is off
+    // within a currently-expanded family (so sub-toggles take effect even when
+    // every top-level family stays checked).
+    const occActive = Object.values(occF).some(v => v === false)
+      || Object.keys(_subF).some(sk => {
+           if (_subF[sk] !== false) return false;
+           const fam = (sk.match(/^([A-Z]+)/) || [])[1];
+           return fam && _exp[fam];
+         });
     const hgtActive = (hf.min != null && hf.min > 3.5) || (hf.max != null && hf.max < 110);
     const yrActive  = (yf.min != null && yf.min > 1900) || (yf.max != null && yf.max < 2020);
     // Occupancy filter
     if (occActive) {
+      const subF = state.occupancySubFilter || {};
+      const exp = state.occExpanded || {};
       feats = feats.filter(d => {
         const occ = (d.properties || {}).occtype;
         if (!occ) return occF.OTHER !== false;
-        const m = String(occ).match(/^([A-Z]+)/);
-        const code = m ? m[1] : 'OTHER';
-        return occF[code] !== false;
+        const { family, sub } = occResolve(occ);
+        if (occF[family] === false) return false;
+        // Sub-bucket gating only applies when the family is drilled-open.
+        if (exp[family] && sub && subF[sub] === false) return false;
+        return true;
       });
     }
     // Height filter
@@ -1673,8 +1786,13 @@ function renderBuildings(g, gj) {
   };
   function occColor(occtype) {
     if (!occtype) return grey;
-    const m = String(occtype).match(/^([A-Z]+)/);
-    return (m && OCC_COLORS[m[1]]) || grey;
+    const { family, sub } = occResolve(occtype);
+    // When this family is drilled-open, color by its sub-bucket shade so the
+    // map shows internal structure; otherwise use the flat family color.
+    if (sub && state.occExpanded && state.occExpanded[family] && OCC_SUB_COLORS[sub]) {
+      return OCC_SUB_COLORS[sub];
+    }
+    return OCC_COLORS[family] || grey;
   }
 
   // Continuous ramps for height & year (cool->warm). Domains capped at
