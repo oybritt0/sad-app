@@ -335,10 +335,19 @@ def build_sad_record(data_dir: Path, sad_dir: Path, embedding: dict, shared_typ:
                 _nd = None
             if _nd and _nd.get('available', True):
                 _ss = (_nd.get('occupancy_share') or {}).get('shares_sqft')
-                if _ss and sum(float(v) for v in _ss.values()) > 0:
+                _nstruct = len(_nd.get('structures') or [])
+                _other = float((_ss or {}).get('other', 0.0))
+                _gate_ok = bool(_ss) and sum(float(v) for v in _ss.values()) > 0 \
+                    and _nstruct >= 5 and _other < 0.5
+                if _gate_ok:
                     program_real = {b: float(_ss.get(b, 0.0)) for b in (
                         'sport', 'residential', 'hotel', 'retail_food_entertainment',
                         'office', 'parking', 'open_space', 'other')}
+                elif _ss:
+                    print('  program_real GATED for ' + str(sad_id) +
+                          ': structures=' + str(_nstruct) +
+                          ', other={:.0%}'.format(_other) +
+                          ' (needs >=5 structures and other<50%); donut falls back to counts')
 
     # Flatten the one walkshed budget the catalog references (10-min).
     walkshed_flat = {}
