@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en" translate="no">
+<head>
+  <meta name="google" content="notranslate">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>District Viewer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Archivo:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css">
+  <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
+  <link rel="stylesheet" href="compare.css">
+  <script type="importmap">
+  { "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }}
+  </script>
+</head>
+<body>
+  <header class="topbar">
+  <meta name="google" content="notranslate">
+    <div class="brand">
+      <img class="brand-logo" src="logo.png" alt="">
+      <div class="brand-text">
+        <span class="brand-name">District Viewer</span>
+        <span class="brand-sub mono" id="field-count">â€”</span>
+      </div>
+    </div>
+
+    <nav class="nav-seg">
+      <a class="seg" href="map.html">Map</a>
+      <a class="seg" href="compare.html">Compare</a>
+      <a class="seg on" href="./">Field</a>
+      <a class="seg" href="../_ui/">Viewer</a>
+    </nav>
+
+    <div class="toolbar">
+      <div class="tgroup">
+        <button id="btn-rotate" class="btn">Orbit</button>
+        <button id="btn-labels" class="btn">Labels</button>
+        <button id="btn-conn" class="btn">Links</button>
+      </div>
+      <div class="tgroup sliders">
+        <label class="slider">Spread
+          <input type="range" id="sl-spread" min="0.5" max="2.2" step="0.05" value="1">
+        </label>
+        <label class="slider">Size
+          <input type="range" id="sl-size" min="0.5" max="2.5" step="0.1" value="1">
+        </label>
+      </div>
+      <button id="btn-draw" class="btn accent">Draw</button>
+      <button id="btn-reset" class="btn ghost">Reset</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="rail">
+      <section>
+        <h2>Typology</h2>
+        <div id="legend" class="legend"></div>
+      </section>
+      <section>
+        <h2>Districts</h2>
+        <div id="district-select" class="dsel"></div>
+      </section>
+      <section>
+        <h2>Projection</h2>
+        <p class="note">A PCA-3D projection of the morphometric feature vector â€” for spatial navigation.</p>
+        <div class="proj-var mono" id="pca-var">â€”</div>
+        <p class="note faint">Similarity (“Nearest districts”) is measured in the full feature space, not from on-screen distance.</p>
+      </section>
+      <section class="rail-foot">
+        <h2>Reading the field</h2>
+        <p class="note">Drag to orbit · scroll to zoom · drag the divider to resize · click a district to compare (up to four).</p>
+      </section>
+    </aside>
+
+    <main class="stage">
+      <div class="loading" id="loading">Loading District Viewer…</div>
+      <div id="field"></div>
+      <div class="stage-grain"></div>
+    </main>
+
+    <div class="splitter" id="splitter" title="Drag to resize"><span></span></div>
+
+    <aside class="panel" id="panel">
+      <div class="panel-head">
+        <div class="panel-title">Selection</div>
+        <div class="chips" id="panel-chips"><span class="muted">Click districts in the field to compare</span></div>
+      </div>
+      <div class="panel-body"></div>
+    </aside>
+  </div>
+
+  <script type="module" src="compare.js"></script>
+</body>
+</html>
+
+
+

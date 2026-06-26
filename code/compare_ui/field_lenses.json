@@ -1,0 +1,529 @@
+{
+  "generated_at": "2026-06-15T15:38:23",
+  "source_dir": "embedding_20260609_1047",
+  "default": "form",
+  "lenses": {
+    "form": {
+      "feature_count": 20,
+      "n_sads": 41,
+      "feature_names": [
+        "morph_density_per_km2",
+        "morph_coverage",
+        "morph_median_area_m2",
+        "morph_area_iqr",
+        "morph_area_log_skew",
+        "morph_mean_compactness",
+        "morph_orientation_R",
+        "morph_cluster_diversity",
+        "prog_pct_sport",
+        "prog_pct_residential",
+        "prog_pct_hotel",
+        "prog_pct_retail_food_entertainment",
+        "prog_pct_office",
+        "prog_pct_parking",
+        "prog_pct_open_space",
+        "prog_pct_other",
+        "prog_diversity",
+        "anchor_count_inside",
+        "anchor_max_area_ratio",
+        "anchor_size_concentration"
+      ],
+      "coords": {
+        "02_Sportsmans-Park_Glendale-AZ": [
+          0.40935950618846717,
+          -0.5497856829286064,
+          1.8736490940489292
+        ],
+        "03_Titletown_Green-Bay-WI": [
+          1.3190822487750196,
+          0.7695235547273017,
+          2.3886271602879168
+        ],
+        "04_Hollywood-Park_Inglewood-CA": [
+          -0.4214534895406792,
+          2.896518204194458,
+          0.6186897166458784
+        ],
+        "05_Downtown-East_Minneapolis-MN": [
+          0.43962606497654017,
+          2.3793436449173897,
+          -1.8721074049553925
+        ],
+        "06_Victory-Park_Dallas-TX": [
+          0.22132525818142393,
+          1.119175975881737,
+          -2.8393301486419364
+        ],
+        "07_LA-Live_Los-Angeles-CA": [
+          1.9165106763246547,
+          0.0673221087046045,
+          1.8556700841768963
+        ],
+        "08_Water-Street_Tampa-FL": [
+          1.4050706634306642,
+          -0.5862172346157355,
+          -1.633688817606048
+        ],
+        "09_Maple-Leaf-Square_Toronto-ON": [
+          2.1273540687161363,
+          1.3581775105461382,
+          -0.5921910902769543
+        ],
+        "10_Pacific-Yards_Brooklyn-NY": [
+          2.6384860173234106,
+          -3.1692028770703002,
+          0.7982234823546958
+        ],
+        "11_Thrive-City_San-Francisco-CA": [
+          -0.26200788867012204,
+          -0.5014841555028958,
+          -2.752939079152182
+        ],
+        "12_The-Battery_Atlanta-GA": [
+          -0.13231457736776522,
+          1.5959623686035989,
+          -0.2971493477071414
+        ],
+        "13_Gallagher-Way_Chicago-IL": [
+          2.4524700975141807,
+          -2.9555765953517508,
+          1.629557679104145
+        ],
+        "14_McGregor-Square_Denver-CO": [
+          1.581940073086961,
+          0.37061208920743555,
+          2.5672587199140637
+        ],
+        "15_Gallagher-Square_San-Diego-CA": [
+          2.5648955733889487,
+          -0.7828605155949712,
+          0.5605697694244212
+        ],
+        "16_Mission-Rock_San-Francisco-CA": [
+          1.0026698315956737,
+          -0.16138563883446577,
+          -0.4800479791210468
+        ],
+        "17_The-Boxyard_Seattle-WA": [
+          1.1472006355600552,
+          -0.550881946108949,
+          -0.6302299387390856
+        ],
+        "18_Ballpark-Village_St-Louis-MO": [
+          1.5146505339167413,
+          -0.28665620769143496,
+          2.010370999636826
+        ],
+        "19_Arlington-Entertainment-District_Arlington-TX": [
+          -1.065999060658393,
+          2.082177063679306,
+          0.014271215352694456
+        ],
+        "20_Astor-Park_Columbus-OH": [
+          -1.0789004903162498,
+          1.45133470432801,
+          0.39612913549417844
+        ],
+        "21_Hub-on-Causeway_Boston-MA": [
+          2.0471002003593233,
+          -1.5188310466931052,
+          -1.4728829267353325
+        ],
+        "22_True-North-Square_Winnipeg-MB": [
+          0.40823624653014373,
+          -0.8005667815020494,
+          0.1191404023269325
+        ],
+        "23_Power-and-Light-District_Kansas-City-MO": [
+          1.4861510866832177,
+          0.03280987612797807,
+          -1.9044343327549147
+        ],
+        "24_The-Star_Frisco-TX": [
+          -2.509475662285881,
+          0.3585803846063538,
+          -0.7806891685117656
+        ],
+        "25_Viking-Lakes_Eagan-MN": [
+          -5.559381036868304,
+          2.4979669524404953,
+          -0.5019976830589123
+        ],
+        "26_LECOM-Harborcenter_Buffalo-NY": [
+          1.2257531022157069,
+          0.6910027628133372,
+          1.2369017624797816
+        ],
+        "27_Treasure-Island-Center_St-Paul-MN": [
+          0.3641862204423413,
+          0.48309870994052156,
+          -1.9716418168373722
+        ],
+        "28_The-Rock-at-La-Cantera_San-Antonio-TX": [
+          -1.8354702495977702,
+          1.085861191751525,
+          -0.5541599462635479
+        ],
+        "29_Parmer-Pond-District_Austin-TX": [
+          -1.0966711186907305,
+          -0.5512551799271656,
+          -0.7231124256717518
+        ],
+        "30_WSFS-Bank-Sportsplex_Chester-PA": [
+          -1.6707939716417888,
+          4.391395990117247,
+          1.5831760939623032
+        ],
+        "31_Patriot-Place_Foxborough-MA": [
+          -0.005658322370707572,
+          0.5214099421288081,
+          2.8513432741411475
+        ],
+        "32_District-Detroit_Detroit-MI": [
+          1.9643863745083532,
+          0.4003899956200183,
+          0.48787382382205347
+        ],
+        "33_ICE-District_Edmonton-AB": [
+          0.004281444303229245,
+          -0.49232226995099604,
+          -1.2895592747281166
+        ],
+        "34_Aquilini-Centre_Vancouver-BC": [
+          1.9412789749841026,
+          0.8051812491678428,
+          0.42924678753183243
+        ],
+        "35_Deer-District_Milwaukee-WI": [
+          1.6721680304140822,
+          -0.27191766967293385,
+          -1.2512312204155482
+        ],
+        "36_Downtown-Commons_Sacramento-CA": [
+          0.6257602359719042,
+          -1.2219828242539377,
+          -2.3818624311384005
+        ],
+        "37_Galaxy-Park_Carson-CA": [
+          -0.7239499665574888,
+          0.7657198229674201,
+          0.3555839569900099
+        ],
+        "38_Bicentennial-Unity-Plaza_Indianapolis-IN": [
+          1.4571369556476383,
+          0.009248493261973028,
+          -0.07200799525224609
+        ],
+        "43_Drawn-district_Ann-Arbor": [
+          -3.331869613334635,
+          -4.143846617708032,
+          0.0655819864631526
+        ],
+        "46_Drawn-district_East-Lansing": [
+          -6.53733991700908,
+          -0.565059576569665,
+          1.475468009230357
+        ],
+        "47_Drawn-district_Kalamazoo": [
+          -3.610077448836784,
+          -3.9219779995012116,
+          -0.0882562369830781
+        ],
+        "49_Drawn-district_Durham": [
+          -4.095717307292536,
+          -3.101001776255291,
+          0.7721861111625562
+        ]
+      },
+      "neighbors": {
+        "02_Sportsmans-Park_Glendale-AZ": [
+          "31_Patriot-Place_Foxborough-MA",
+          "38_Bicentennial-Unity-Plaza_Indianapolis-IN",
+          "26_LECOM-Harborcenter_Buffalo-NY",
+          "14_McGregor-Square_Denver-CO",
+          "17_The-Boxyard_Seattle-WA"
+        ],
+        "03_Titletown_Green-Bay-WI": [
+          "26_LECOM-Harborcenter_Buffalo-NY",
+          "18_Ballpark-Village_St-Louis-MO",
+          "34_Aquilini-Centre_Vancouver-BC",
+          "31_Patriot-Place_Foxborough-MA",
+          "14_McGregor-Square_Denver-CO"
+        ],
+        "04_Hollywood-Park_Inglewood-CA": [
+          "28_The-Rock-at-La-Cantera_San-Antonio-TX",
+          "31_Patriot-Place_Foxborough-MA",
+          "30_WSFS-Bank-Sportsplex_Chester-PA",
+          "05_Downtown-East_Minneapolis-MN",
+          "16_Mission-Rock_San-Francisco-CA"
+        ],
+        "05_Downtown-East_Minneapolis-MN": [
+          "23_Power-and-Light-District_Kansas-City-MO",
+          "12_The-Battery_Atlanta-GA",
+          "27_Treasure-Island-Center_St-Paul-MN",
+          "34_Aquilini-Centre_Vancouver-BC",
+          "16_Mission-Rock_San-Francisco-CA"
+        ],
+        "06_Victory-Park_Dallas-TX": [
+          "23_Power-and-Light-District_Kansas-City-MO",
+          "27_Treasure-Island-Center_St-Paul-MN",
+          "16_Mission-Rock_San-Francisco-CA",
+          "09_Maple-Leaf-Square_Toronto-ON",
+          "08_Water-Street_Tampa-FL"
+        ],
+        "07_LA-Live_Los-Angeles-CA": [
+          "14_McGregor-Square_Denver-CO",
+          "15_Gallagher-Square_San-Diego-CA",
+          "22_True-North-Square_Winnipeg-MB",
+          "32_District-Detroit_Detroit-MI",
+          "21_Hub-on-Causeway_Boston-MA"
+        ],
+        "08_Water-Street_Tampa-FL": [
+          "36_Downtown-Commons_Sacramento-CA",
+          "33_ICE-District_Edmonton-AB",
+          "38_Bicentennial-Unity-Plaza_Indianapolis-IN",
+          "27_Treasure-Island-Center_St-Paul-MN",
+          "35_Deer-District_Milwaukee-WI"
+        ],
+        "09_Maple-Leaf-Square_Toronto-ON": [
+          "38_Bicentennial-Unity-Plaza_Indianapolis-IN",
+          "23_Power-and-Light-District_Kansas-City-MO",
+          "34_Aquilini-Centre_Vancouver-BC",
+          "16_Mission-Rock_San-Francisco-CA",
+          "15_Gallagher-Square_San-Diego-CA"
+        ],
+        "10_Pacific-Yards_Brooklyn-NY": [
+          "13_Gallagher-Way_Chicago-IL",
+          "21_Hub-on-Causeway_Boston-MA",
+          "32_District-Detroit_Detroit-MI",
+          "22_True-North-Square_Winnipeg-MB",
+          "16_Mission-Rock_San-Francisco-CA"
+        ],
+        "11_Thrive-City_San-Francisco-CA": [
+          "36_Downtown-Commons_Sacramento-CA",
+          "33_ICE-District_Edmonton-AB",
+          "16_Mission-Rock_San-Francisco-CA",
+          "23_Power-and-Light-District_Kansas-City-MO",
+          "08_Water-Street_Tampa-FL"
+        ],
+        "12_The-Battery_Atlanta-GA": [
+          "20_Astor-Park_Columbus-OH",
+          "23_Power-and-Light-District_Kansas-City-MO",
+          "34_Aquilini-Centre_Vancouver-BC",
+          "22_True-North-Square_Winnipeg-MB",
+          "16_Mission-Rock_San-Francisco-CA"
+        ],
+        "13_Gallagher-Way_Chicago-IL": [
+          "10_Pacific-Yards_Brooklyn-NY",
+          "22_True-North-Square_Winnipeg-MB",
+          "15_Gallagher-Square_San-Diego-CA",
+          "16_Mission-Rock_San-Francisco-CA",
+          "21_Hub-on-Causeway_Boston-MA"
+        ],
+        "14_McGregor-Square_Denver-CO": [
+          "07_LA-Live_Los-Angeles-CA",
+          "31_Patriot-Place_Foxborough-MA",
+          "26_LECOM-Harborcenter_Buffalo-NY",
+          "22_True-North-Square_Winnipeg-MB",
+          "16_Mission-Rock_San-Francisco-CA"
+        ],
+        "15_Gallagher-Square_San-Diego-CA": [
+          "07_LA-Live_Los-Angeles-CA",
+          "38_Bicentennial-Unity-Plaza_Indianapolis-IN",
+          "23_Power-and-Light-District_Kansas-City-MO",
+          "22_True-North-Square_Winnipeg-MB",
+          "21_Hub-on-Causeway_Boston-MA"
+        ],
+        "16_Mission-Rock_San-Francisco-CA": [
+          "17_The-Boxyard_Seattle-WA",
+          "22_True-North-Square_Winnipeg-MB",
+          "23_Power-and-Light-District_Kansas-City-MO",
+          "34_Aquilini-Centre_Vancouver-BC",
+          "26_LECOM-Harborcenter_Buffalo-NY"
+        ],
+        "17_The-Boxyard_Seattle-WA": [
+          "16_Mission-Rock_San-Francisco-CA",
+          "23_Power-and-Light-District_Kansas-City-MO",
+          "22_True-North-Square_Winnipeg-MB",
+          "33_ICE-District_Edmonton-AB",
+          "29_Parmer-Pond-District_Austin-TX"
+        ],
+        "18_Ballpark-Village_St-Louis-MO": [
+          "38_Bicentennial-Unity-Plaza_Indianapolis-IN",
+          "02_Sportsmans-Park_Glendale-AZ",
+          "31_Patriot-Place_Foxborough-MA",
+          "15_Gallagher-Square_San-Diego-CA",
+          "22_True-North-Square_Winnipeg-MB"
+        ],
+        "19_Arlington-Entertainment-District_Arlington-TX": [
+          "09_Maple-Leaf-Square_Toronto-ON",
+          "38_Bicentennial-Unity-Plaza_Indianapolis-IN",
+          "28_The-Rock-at-La-Cantera_San-Antonio-TX",
+          "26_LECOM-Harborcenter_Buffalo-NY",
+          "27_Treasure-Island-Center_St-Paul-MN"
+        ],
+        "20_Astor-Park_Columbus-OH": [
+          "12_The-Battery_Atlanta-GA",
+          "33_ICE-District_Edmonton-AB",
+          "02_Sportsmans-Park_Glendale-AZ",
+          "17_The-Boxyard_Seattle-WA",
+          "29_Parmer-Pond-District_Austin-TX"
+        ],
+        "21_Hub-on-Causeway_Boston-MA": [
+          "23_Power-and-Light-District_Kansas-City-MO",
+          "08_Water-Street_Tampa-FL",
+          "22_True-North-Square_Winnipeg-MB",
+          "16_Mission-Rock_San-Francisco-CA",
+          "36_Downtown-Commons_Sacramento-CA"
+        ],
+        "22_True-North-Square_Winnipeg-MB": [
+          "16_Mission-Rock_San-Francisco-CA",
+          "17_The-Boxyard_Seattle-WA",
+          "23_Power-and-Light-District_Kansas-City-MO",
+          "29_Parmer-Pond-District_Austin-TX",
+          "33_ICE-District_Edmonton-AB"
+        ],
+        "23_Power-and-Light-District_Kansas-City-MO": [
+          "17_The-Boxyard_Seattle-WA",
+          "16_Mission-Rock_San-Francisco-CA",
+          "33_ICE-District_Edmonton-AB",
+          "27_Treasure-Island-Center_St-Paul-MN",
+          "22_True-North-Square_Winnipeg-MB"
+        ],
+        "24_The-Star_Frisco-TX": [
+          "29_Parmer-Pond-District_Austin-TX",
+          "22_True-North-Square_Winnipeg-MB",
+          "12_The-Battery_Atlanta-GA",
+          "33_ICE-District_Edmonton-AB",
+          "11_Thrive-City_San-Francisco-CA"
+        ],
+        "25_Viking-Lakes_Eagan-MN": [
+          "24_The-Star_Frisco-TX",
+          "28_The-Rock-at-La-Cantera_San-Antonio-TX",
+          "19_Arlington-Entertainment-District_Arlington-TX",
+          "29_Parmer-Pond-District_Austin-TX",
+          "46_Drawn-district_East-Lansing"
+        ],
+        "26_LECOM-Harborcenter_Buffalo-NY": [
+          "34_Aquilini-Centre_Vancouver-BC",
+          "16_Mission-Rock_San-Francisco-CA",
+          "38_Bicentennial-Unity-Plaza_Indianapolis-IN",
+          "32_District-Detroit_Detroit-MI",
+          "14_McGregor-Square_Denver-CO"
+        ],
+        "27_Treasure-Island-Center_St-Paul-MN": [
+          "23_Power-and-Light-District_Kansas-City-MO",
+          "33_ICE-District_Edmonton-AB",
+          "08_Water-Street_Tampa-FL",
+          "36_Downtown-Commons_Sacramento-CA",
+          "35_Deer-District_Milwaukee-WI"
+        ],
+        "28_The-Rock-at-La-Cantera_San-Antonio-TX": [
+          "33_ICE-District_Edmonton-AB",
+          "11_Thrive-City_San-Francisco-CA",
+          "16_Mission-Rock_San-Francisco-CA",
+          "27_Treasure-Island-Center_St-Paul-MN",
+          "29_Parmer-Pond-District_Austin-TX"
+        ],
+        "29_Parmer-Pond-District_Austin-TX": [
+          "17_The-Boxyard_Seattle-WA",
+          "22_True-North-Square_Winnipeg-MB",
+          "33_ICE-District_Edmonton-AB",
+          "16_Mission-Rock_San-Francisco-CA",
+          "24_The-Star_Frisco-TX"
+        ],
+        "30_WSFS-Bank-Sportsplex_Chester-PA": [
+          "04_Hollywood-Park_Inglewood-CA",
+          "28_The-Rock-at-La-Cantera_San-Antonio-TX",
+          "19_Arlington-Entertainment-District_Arlington-TX",
+          "26_LECOM-Harborcenter_Buffalo-NY",
+          "12_The-Battery_Atlanta-GA"
+        ],
+        "31_Patriot-Place_Foxborough-MA": [
+          "02_Sportsmans-Park_Glendale-AZ",
+          "14_McGregor-Square_Denver-CO",
+          "26_LECOM-Harborcenter_Buffalo-NY",
+          "18_Ballpark-Village_St-Louis-MO",
+          "22_True-North-Square_Winnipeg-MB"
+        ],
+        "32_District-Detroit_Detroit-MI": [
+          "38_Bicentennial-Unity-Plaza_Indianapolis-IN",
+          "34_Aquilini-Centre_Vancouver-BC",
+          "26_LECOM-Harborcenter_Buffalo-NY",
+          "08_Water-Street_Tampa-FL",
+          "17_The-Boxyard_Seattle-WA"
+        ],
+        "33_ICE-District_Edmonton-AB": [
+          "36_Downtown-Commons_Sacramento-CA",
+          "17_The-Boxyard_Seattle-WA",
+          "08_Water-Street_Tampa-FL",
+          "23_Power-and-Light-District_Kansas-City-MO",
+          "27_Treasure-Island-Center_St-Paul-MN"
+        ],
+        "34_Aquilini-Centre_Vancouver-BC": [
+          "16_Mission-Rock_San-Francisco-CA",
+          "26_LECOM-Harborcenter_Buffalo-NY",
+          "38_Bicentennial-Unity-Plaza_Indianapolis-IN",
+          "32_District-Detroit_Detroit-MI",
+          "23_Power-and-Light-District_Kansas-City-MO"
+        ],
+        "35_Deer-District_Milwaukee-WI": [
+          "08_Water-Street_Tampa-FL",
+          "27_Treasure-Island-Center_St-Paul-MN",
+          "38_Bicentennial-Unity-Plaza_Indianapolis-IN",
+          "36_Downtown-Commons_Sacramento-CA",
+          "23_Power-and-Light-District_Kansas-City-MO"
+        ],
+        "36_Downtown-Commons_Sacramento-CA": [
+          "33_ICE-District_Edmonton-AB",
+          "08_Water-Street_Tampa-FL",
+          "11_Thrive-City_San-Francisco-CA",
+          "27_Treasure-Island-Center_St-Paul-MN",
+          "23_Power-and-Light-District_Kansas-City-MO"
+        ],
+        "37_Galaxy-Park_Carson-CA": [
+          "26_LECOM-Harborcenter_Buffalo-NY",
+          "27_Treasure-Island-Center_St-Paul-MN",
+          "28_The-Rock-at-La-Cantera_San-Antonio-TX",
+          "35_Deer-District_Milwaukee-WI",
+          "16_Mission-Rock_San-Francisco-CA"
+        ],
+        "38_Bicentennial-Unity-Plaza_Indianapolis-IN": [
+          "08_Water-Street_Tampa-FL",
+          "32_District-Detroit_Detroit-MI",
+          "33_ICE-District_Edmonton-AB",
+          "34_Aquilini-Centre_Vancouver-BC",
+          "26_LECOM-Harborcenter_Buffalo-NY"
+        ],
+        "43_Drawn-district_Ann-Arbor": [
+          "49_Drawn-district_Durham",
+          "47_Drawn-district_Kalamazoo",
+          "33_ICE-District_Edmonton-AB",
+          "46_Drawn-district_East-Lansing",
+          "36_Downtown-Commons_Sacramento-CA"
+        ],
+        "46_Drawn-district_East-Lansing": [
+          "49_Drawn-district_Durham",
+          "43_Drawn-district_Ann-Arbor",
+          "24_The-Star_Frisco-TX",
+          "47_Drawn-district_Kalamazoo",
+          "25_Viking-Lakes_Eagan-MN"
+        ],
+        "47_Drawn-district_Kalamazoo": [
+          "43_Drawn-district_Ann-Arbor",
+          "49_Drawn-district_Durham",
+          "29_Parmer-Pond-District_Austin-TX",
+          "22_True-North-Square_Winnipeg-MB",
+          "24_The-Star_Frisco-TX"
+        ],
+        "49_Drawn-district_Durham": [
+          "43_Drawn-district_Ann-Arbor",
+          "47_Drawn-district_Kalamazoo",
+          "46_Drawn-district_East-Lansing",
+          "24_The-Star_Frisco-TX",
+          "29_Parmer-Pond-District_Austin-TX"
+        ]
+      }
+    }
+  }
+}

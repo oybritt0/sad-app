@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en" translate="no">
+<head>
+  <meta name="google" content="notranslate">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>District Viewer — Compare</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="compare.css">
+  <style>
+    /* compare tab layer — flowing sections on the tool's own language, no boxed cards */
+    body{display:flex;flex-direction:column;overflow:hidden}
+    .ctrl{flex:0 0 auto;display:flex;align-items:center;gap:22px;padding:15px 26px;border-bottom:1px solid var(--line);background:var(--paper);flex-wrap:wrap}
+    .ctrl .k{font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-3);margin-right:9px}
+    .ctrl .fld{display:flex;align-items:center}
+    select{font:inherit;font-size:12px;padding:6px 24px 6px 10px;border:1px solid var(--line);border-radius:100px;background:var(--paper);color:var(--ink);appearance:none;cursor:pointer;
+      background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M0 0l5 6 5-6z' fill='%23968d80'/></svg>");background-repeat:no-repeat;background-position:right 10px center}
+    .scroll{flex:1 1 auto;overflow:auto;background:var(--paper-2)}
+    .sheet{max-width:880px;margin:0 auto;background:var(--paper);border-left:1px solid var(--line);border-right:1px solid var(--line);min-height:100%}
+    .block{padding:34px 44px;border-bottom:1px solid var(--line-2)}
+    .block:last-child{border-bottom:none}
+    .block .chart{margin:0 auto}
+    .block svg{display:block;width:100%;height:auto}
+    .block.center svg{max-width:430px;margin:0 auto}
+    .blockbar{display:flex;align-items:center;justify-content:space-between;margin-top:14px;min-height:18px}
+    .axsel{display:flex;align-items:center;gap:8px}
+    .axsel select{font-size:11px;padding:5px 20px 5px 8px}
+    .ghost{font:500 10px/1 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);background:none;border:none;cursor:pointer;padding:4px 2px}
+    .ghost:hover{color:var(--accent)}
+    .ghost+.ghost{margin-left:16px}
+    .ovl{position:fixed;inset:0;background:rgba(20,17,14,.55);display:none;align-items:center;justify-content:center;z-index:2000;padding:34px}
+    .ovl.on{display:flex}
+    .ovl-box{background:var(--paper);border:1px solid var(--line);border-radius:10px;box-shadow:0 24px 64px rgba(20,17,14,.28);max-width:1020px;width:100%;max-height:92vh;overflow:auto;padding:24px 28px}
+    .ovl-head{display:flex;justify-content:flex-end;gap:16px;margin-bottom:6px}
+    .ovl-box svg{width:100%;height:auto;display:block}
+    .foot{flex:0 0 auto;padding:11px 26px;border-top:1px solid var(--line);font-size:10.5px;color:var(--ink-3);background:var(--paper)}
+    .banner{flex:0 0 auto;display:none;align-items:center;gap:10px;padding:10px 26px;background:#fff4f0;border-bottom:1px solid var(--line);font-size:12px;color:var(--ink-2)}
+    .banner.on{display:flex}
+    .banner b{color:var(--ink)}
+    .banner .x{margin-left:auto;cursor:pointer;color:var(--ink-3)}
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <img class="brand-logo" src="logo.png" alt="" onerror="this.outerHTML='<span class=\'brand-mark\'></span>'">
+      <span class="brand-name">District Viewer</span>
+    </div>
+    <nav class="nav-seg">
+      <a class="seg" href="map.html">Map</a>
+      <a class="seg on" href="compare.html">Compare</a>
+      <a class="seg" href="./">Field</a>
+      <a class="seg" href="../_ui/">Viewer</a>
+      <a class="seg" href="nature.html">Nature</a>
+    </nav>
+    <div class="toolbar"></div>
+  </header>
+  <div class="banner" id="banner"></div>
+  <div class="ctrl">
+    <div class="fld"><span class="k">Focus</span><select id="focus"></select></div>
+    <div class="fld"><span class="k">Against</span><div class="chips" id="chips"></div></div>
+    <div class="fld" style="margin-left:auto"><select id="add"><option value="">+ add district…</option></select></div>
+  </div>
+  <div class="scroll"><div class="sheet" id="sheet"></div></div>
+  <div class="foot" id="foot"></div>
+  <div class="ovl" id="ovl"><div class="ovl-box"><div class="ovl-head"><button class="ghost" id="ovl-png">Download PNG</button><button class="ghost" id="ovl-close">Close</button></div><div id="ovl-body"></div></div></div>
+  <script type="module" src="compare_dash.js"></script>
+</body>
+</html>
