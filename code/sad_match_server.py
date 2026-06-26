@@ -714,6 +714,12 @@ def make_app(data_dir: Path, api_key: str, year: int) -> "Flask":
     except Exception as e:
         print(f"  [warn] structure match not wired: {e}")
 
+    try:
+        import typology_override
+        typology_override.register(app, data_dir)
+    except Exception as e:
+        print(f"  [warn] typology override not wired: {e}")
+
     return app
 
 
