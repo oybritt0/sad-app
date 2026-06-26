@@ -342,7 +342,7 @@ def build_sad_record(data_dir: Path, sad_dir: Path, embedding: dict, shared_typ:
                 if _gate_ok:
                     program_real = {b: float(_ss.get(b, 0.0)) for b in (
                         'sport', 'residential', 'hotel', 'retail_food_entertainment',
-                        'office', 'parking', 'open_space', 'other')}
+                        'office', 'parking', 'open_space', 'institutional', 'other')}
                 elif _ss:
                     print('  program_real GATED for ' + str(sad_id) +
                           ': structures=' + str(_nstruct) +
