@@ -1176,6 +1176,21 @@ function parcelSectionHTML(id) {
   const zHTML = zoning.length
     ? `<div class="p-zoning"><div class="sub-h">Zoning mix</div>${zoning.map(([k, v]) => `<div class="p-row"><span class="nm">${k}</span><span class="mono">${v}</span></div>`).join('')}</div>`
     : '';
+  const _entry = (e) => Array.isArray(e)
+    ? [e[0], e[1]]
+    : (e && typeof e === 'object'
+        ? [e.name || e.owner || e.label || '', (e.share != null ? e.share : (e.pct != null ? e.pct : e.value))]
+        : [String(e), '']);
+  const _pct = (v) => (v == null || v === '') ? '' : (v <= 1 ? `${Math.round(v * 100)}%` : `${Math.round(v)}%`);
+  const owners = (p.top_owners || []).slice(0, 5).map(_entry);
+  const _owntop = p.top5_owner_share != null ? ` <span class="faint">(top 5 = ${_pct(p.top5_owner_share)})</span>` : '';
+  const ownHTML = owners.length
+    ? `<div class="p-owners"><div class="sub-h">Ownership${_owntop}</div>${owners.map(([k, v]) => `<div class="p-row"><span class="nm">${k}</span><span class="mono">${_pct(v)}</span></div>`).join('')}</div>`
+    : '';
+  const landuse = (p.use_desc_top || p.use_code_top || []).slice(0, 5).map(_entry);
+  const luHTML = landuse.length
+    ? `<div class="p-landuse"><div class="sub-h">Land use mix</div>${landuse.map(([k, v]) => `<div class="p-row"><span class="nm">${k}</span><span class="mono">${v}</span></div>`).join('')}</div>`
+    : '';
   const near = parcelNearest(id, 3);
   const nearHTML = near.length
     ? `<div class="p-near"><div class="sub-h">Nearest by parcel signal</div>${near.map(t => `<div class="p-row"><span class="nm">${t.name}</span><span class="mono">${t.d.toFixed(2)}</span></div>`).join('')}</div>`
@@ -1183,6 +1198,8 @@ function parcelSectionHTML(id) {
   return `<section class="sec parcel-sec">
     <div class="sec-h">Parcels <span class="info-link" data-info="parcels">\u24d8</span></div>
     <div class="p-stats">${stats}</div>
+    ${ownHTML}
+    ${luHTML}
     ${zHTML}
     ${nearHTML}
   </section>`;
