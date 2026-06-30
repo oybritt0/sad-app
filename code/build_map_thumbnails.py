@@ -123,6 +123,22 @@ def simplify_ring(coords, tol):
     if len(simp)>=3: simp=simp+[simp[0]]
     return simp if len(simp)>=4 else coords
 
+def simplify_line(coords, tol):
+    if len(coords) < 3: return coords
+    def dp(chain):
+        if len(chain) < 3: return chain
+        x1,y1=chain[0]; x2,y2=chain[-1]
+        dx,dy=x2-x1,y2-y1; norm=math.hypot(dx,dy) or 1e-9
+        dmax=0; idx=0
+        for i in range(1,len(chain)-1):
+            px,py=chain[i]
+            dd=abs(dx*(y1-py)-dy*(x1-px))/norm
+            if dd>dmax: dmax=dd; idx=i
+        if dmax>tol:
+            return dp(chain[:idx+1])[:-1]+dp(chain[idx:])
+        return [chain[0],chain[-1]]
+    return dp(coords)
+
 def process_district(path):
     d = json.load(open(path))
     feats = d.get('features',[])
@@ -174,6 +190,76 @@ def process_district(path):
         'ht':[it[3] for it in items],
         'yr':[it[4] for it in items],
     }
+    base = path.split('/derived/')[0]
+    def _norm_pt(x,y):
+        return [int(round((x-minx)/spanx*1000)), int(round((1-(y-miny)/spany)*1000))]
+    parks=[]
+    pp = os.path.join(base,'source','parks.geojson')
+    if os.path.exists(pp):
+        try:
+            pd = json.load(open(pp))
+            for f in pd.get('features',[]):
+                g=f.get('geometry') or {}; t=g.get('type'); cs=g.get('coordinates')
+                if not cs: continue
+                polys = cs if t=='MultiPolygon' else [cs] if t=='Polygon' else []
+                for poly in polys:
+                    if not poly: continue
+                    ext=poly[0]
+                    if len(ext)<4: continue
+                    norm=[[ (pt[0]-minx)/spanx*1000, (1-(pt[1]-miny)/spany)*1000 ] for pt in ext]
+                    simp=simplify_ring(norm, SIMPLIFY_TOL)
+                    if len(simp)<3: continue
+                    if ring_area(simp) < min_area: continue
+                    flat=[]
+                    for x,y in simp: flat.append(int(round(x))); flat.append(int(round(y)))
+                    parks.append(flat)
+            del pd
+        except Exception: pass
+    streets=[]; stw=[]
+    sp = os.path.join(base,'derived','street_centrality.geojson')
+    if os.path.exists(sp):
+        try:
+            sd = json.load(open(sp))
+            cmax=1e-9
+            for f in sd.get('features',[]):
+                c=f.get('properties',{}).get('centrality_global')
+                if isinstance(c,(int,float)) and c>cmax: cmax=c
+            for f in sd.get('features',[]):
+                g=f.get('geometry') or {}; t=g.get('type'); cs=g.get('coordinates')
+                if not cs: continue
+                lines = cs if t=='MultiLineString' else [cs] if t=='LineString' else []
+                c=f.get('properties',{}).get('centrality_global') or 0
+                w=round(min(1.0, (c/cmax))**0.5, 2) if cmax>0 else 0.3
+                for ln in lines:
+                    if len(ln)<2: continue
+                    norm=[[ (pt[0]-minx)/spanx*1000, (1-(pt[1]-miny)/spany)*1000 ] for pt in ln]
+                    simp=simplify_line(norm, SIMPLIFY_TOL)
+                    if len(simp)<2: continue
+                    flat=[]
+                    for x,y in simp: flat.append(int(round(x))); flat.append(int(round(y)))
+                    streets.append(flat); stw.append(w)
+            del sd
+        except Exception: pass
+    bcenter=None
+    bp = os.path.join(base,'source','sad_boundary.geojson')
+    if os.path.exists(bp):
+        try:
+            bd = json.load(open(bp))
+            xs=[]; ys=[]
+            for f in bd.get('features',[]):
+                g=f.get('geometry') or {}; t=g.get('type'); cs=g.get('coordinates')
+                polys = cs if t=='MultiPolygon' else [cs] if t=='Polygon' else []
+                for poly in polys:
+                    for pt in poly[0]:
+                        xs.append(pt[0]); ys.append(pt[1])
+            if xs:
+                bcenter=_norm_pt(sum(xs)/len(xs), sum(ys)/len(ys))
+            del bd
+        except Exception: pass
+    out['parks']=parks
+    out['streets']=streets
+    out['stw']=stw
+    if bcenter: out['bcenter']=bcenter
     del d, feats, raw, items
     gc.collect()
     return out
@@ -189,6 +275,7 @@ def main():
         import json as _j
         s=_j.dumps({sad_id:r},separators=(',',':'))
         print(f'ONE district {sad_id}: bldgs={len(r["b"])} occ_groups={len(OCC_GROUPS)}')
+        print(f'  parks={len(r["parks"])} streets={len(r["streets"])} bcenter={r.get("bcenter")}')
         print(f'  json size for this district: {len(s)/1000:.1f} KB')
         print(f'  projected for 63 districts: ~{len(s)*63/1e6:.1f} MB')
         print(f'  sample bldg coords (first): {r["b"][0][:12]}...')
