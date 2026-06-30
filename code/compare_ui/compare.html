@@ -1088,6 +1088,13 @@ function methodHTML(key){
   h+='<div style="margin-top:12px;font-family:monospace;font-size:10px;color:#8a8a8a">Corpus = 41 studied districts. Percentiles vs corpus. US-only data absent for 4 Canadian districts.</div>';
   return h;
 }
+function updateMapsChart(srcEl){
+  // Redraw ONLY the maps chart SVG so the control bar / dragged slider survive.
+  let out; try{ out=cMaps(); }catch(e){ return; }
+  LAST['maps']=out.svg;
+  const block = srcEl && srcEl.closest ? srcEl.closest('.block') : null;
+  if(block){ const c=block.querySelector('.chart'); if(c) c.innerHTML=out.svg; }
+}
 function render(){
   const sheet=document.getElementById('sheet');sheet.innerHTML='';LAST={};
   CHARTS.forEach(([key,fn])=>{let out;try{out=fn();}catch(err){out={title:key,svg:'<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 800 90\"><rect width=\"800\" height=\"90\" fill=\"#ffffff\"/><text x=\"20\" y=\"34\" style=\"font:700 14px Arial;fill:#d64545\">'+key+' panel error</text><text x=\"20\" y=\"58\" style=\"font:11px monospace;fill:#5a5a5a\">'+String(err&&err.message||err).slice(0,90)+'</text></svg>'};}LAST[key]=out.svg;
@@ -1114,13 +1121,13 @@ function render(){
   sheet.querySelectorAll('[data-anmode]').forEach(s=>s.addEventListener('change',e=>{ANMODE=e.target.value;render();}));
   sheet.querySelectorAll('[data-fpmode]').forEach(s=>s.addEventListener('change',e=>{FPMODE=e.target.value;render();}));
   sheet.querySelectorAll('[data-wt]').forEach(s=>s.addEventListener('input',e=>{WEIGHTS[e.target.dataset.wt]=+e.target.value;render();}));
-  sheet.querySelectorAll('[data-sat]').forEach(s=>s.addEventListener('change',e=>{MAPSAT=e.target.checked;render();}));
-  sheet.querySelectorAll('[data-satop]').forEach(s=>s.addEventListener('input',e=>{MAPSAT_OP=+e.target.value;render();}));
-  sheet.querySelectorAll('[data-streets]').forEach(s=>s.addEventListener('change',e=>{MAPSTREETS=e.target.checked;render();}));
-  sheet.querySelectorAll('[data-parks]').forEach(s=>s.addEventListener('change',e=>{MAPPARKS=e.target.checked;render();}));
-  sheet.querySelectorAll('[data-boundary]').forEach(s=>s.addEventListener('change',e=>{MAPBOUNDARY=e.target.checked;render();}));
-  sheet.querySelectorAll('[data-mapsize]').forEach(s=>s.addEventListener('input',e=>{MAPSIZE=+e.target.value;render();}));
-  sheet.querySelectorAll('[data-occ]').forEach(c=>c.addEventListener('change',e=>{MAPSHOW[e.target.dataset.occ]=e.target.checked?1:0;render();}));
+  sheet.querySelectorAll('[data-sat]').forEach(s=>s.addEventListener('change',e=>{MAPSAT=e.target.checked;updateMapsChart(e.target);}));
+  sheet.querySelectorAll('[data-satop]').forEach(s=>s.addEventListener('input',e=>{MAPSAT_OP=+e.target.value;updateMapsChart(e.target);}));
+  sheet.querySelectorAll('[data-streets]').forEach(s=>s.addEventListener('change',e=>{MAPSTREETS=e.target.checked;updateMapsChart(e.target);}));
+  sheet.querySelectorAll('[data-parks]').forEach(s=>s.addEventListener('change',e=>{MAPPARKS=e.target.checked;updateMapsChart(e.target);}));
+  sheet.querySelectorAll('[data-boundary]').forEach(s=>s.addEventListener('change',e=>{MAPBOUNDARY=e.target.checked;updateMapsChart(e.target);}));
+  sheet.querySelectorAll('[data-mapsize]').forEach(s=>s.addEventListener('input',e=>{MAPSIZE=+e.target.value;updateMapsChart(e.target);}));
+  sheet.querySelectorAll('[data-occ]').forEach(c=>c.addEventListener('change',e=>{MAPSHOW[e.target.dataset.occ]=e.target.checked?1:0;updateMapsChart(e.target);}));
 
   sheet.querySelectorAll('[data-wreset]').forEach(b=>b.addEventListener('click',()=>{LENS_KEYS.forEach(lk=>WEIGHTS[lk]=1);render();}));
   renderChips();renderAdd();
