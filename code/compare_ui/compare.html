@@ -926,6 +926,7 @@ function cMatrix(){
 // full cMaps panel for injection. Async-loads THUMBS once, draws grid of thumbnails.
 let THUMBS=null, THUMBS_LOADING=false;
 let MAPSAT=false, MAPSAT_OP=0.7, MAPSTREETS=false, MAPPARKS=false;
+let MAPSIZE=0;  // 0 = auto cell size; >0 = continuous cell px (size slider)
 let MAPBOUNDARY=false;
 let MAPSHOW={'residential':1,'hotel/institutional':1,'retail':1,'office':1,'entertainment':1,'civic/medical/parking':1,'industrial/service':1,'other':1};
 const SHARED_SPAN_M=2500;
@@ -1010,20 +1011,26 @@ function cMaps(){
   }
   const ids=sel().filter(id=>THUMBS[id]);
   if(!ids.length)return {title:'District footprints',svg:svg(800,120,'District footprints','no footprint data for selection','')};
-  const W=800,per=Math.min(ids.length,4),S=Math.min(175,(W-40)/per-12),gap=12;
-  const cols=per,rows=Math.ceil(ids.length/cols);
+  const W=800,gap=12;
+  const autoCols=Math.min(ids.length,4);
+  const autoS=(W-40)/autoCols-12;
+  const S=Math.max(120,Math.min(760, MAPSIZE||autoS));
+  const cols=Math.max(1,Math.min(ids.length, Math.floor((W-20)/(S+gap))));
+  const rows=Math.ceil(ids.length/cols);
   let inner='';let y0=64;
   ids.forEach((id,idx)=>{const col=idx%cols,row=Math.floor(idx/cols);
     const ox=20+col*(S+gap),oy=y0+row*(S+34);
     const data=THUMBS[id];
-    inner+=_drawThumb(ox,oy,S,data,idx);
     const isF=(id===FOCUS);
+    inner+='<a href="../_ui/?sad='+encodeURIComponent(id)+'" target="_top" style="cursor:pointer"><title>Open '+esc(byId[id].name)+' in viewer</title>';
+    inner+=_drawThumb(ox,oy,S,data,idx);
     // thin BLACK outline for all; focus thicker (double weight)
     inner+='<rect x="'+ox+'" y="'+oy+'" width="'+S+'" height="'+S+'" fill="none" stroke="#000000" stroke-width="'+(isF?2:0.75)+'"/>';
     inner+='<text x="'+ox+'" y="'+(oy+S+16)+'" style="font:700 9px Arial;fill:#000000;letter-spacing:0.02em">'+esc(byId[id].name).slice(0,24).toUpperCase()+(isF?'  \u25c0':'')+'</text>';
+    inner+='</a>';
   });
   let H=y0+rows*(S+34)+14;
-  return {title:'District footprints',svg:svg(W,H,'District footprints','simplified building footprints, shared 2.5km scale',inner)};
+  return {title:'District footprints',svg:svg(W,H,'District footprints','simplified building footprints, shared 2.5km scale - click a district to open it in the viewer',inner)};
 }
 const CHARTS=[['census',cCensus],['table',cTable],['rose',cRose],['indices',cIndices],['delta',cDelta],['analogues',cAnalogues],['fingerprint',cFingerprint],['matrix',cMatrix],['maps',cMaps],['similarity',cSim],['program',cProgram],['daynight',cDayNight],['scatter',cScatter],['ranking',cRank]];
 
@@ -1090,7 +1097,8 @@ function render(){
     else if(key==='program')ax='<div class="axsel"><span class="k">Program</span><select data-prog="1"><option value="area"'+(PROGMODE==='area'?' selected':'')+'>By occupancy (incl. surface parking)</option><option value="poi"'+(PROGMODE==='poi'?' selected':'')+'>By POIs</option></select></div>';
     else if(key==='analogues')ax='<div class="axsel"><span class="k">View</span><select data-anmode="1"><option value="focus"'+(ANMODE==='focus'?' selected':'')+'>Closest to focus</option><option value="each"'+(ANMODE==='each'?' selected':'')+'>Each district</option></select></div>';
       else if(key==='fingerprint')ax='<div class="axsel"><span class="k">View</span><select data-fpmode="1"><option value="grid"'+(FPMODE==='grid'?' selected':'')+'>Side by side</option><option value="overlay"'+(FPMODE==='overlay'?' selected':'')+'>Overlay</option></select></div>';
-      else if(key==='maps')ax='<div class="axsel">'+'<label class="occchk"><input type="checkbox" data-sat="1"'+(MAPSAT?' checked':'')+'>SATELLITE</label>'+'<input type="range" data-satop="1" min="0" max="1" step="0.05" value="'+MAPSAT_OP+'" style="width:70px;vertical-align:middle" title="satellite opacity">'+'<label class="occchk" style="margin-left:14px"><input type="checkbox" data-streets="1"'+(MAPSTREETS?' checked':'')+'>STREETS</label>'+'<label class="occchk"><input type="checkbox" data-parks="1"'+(MAPPARKS?' checked':'')+'>PARKS</label>'+'<label class="occchk"><input type="checkbox" data-boundary="1"'+(MAPBOUNDARY?' checked':'')+'>SAD BOUNDARY</label>'+'<div class="occfilt">'+OCC_ORDER.map(grp=>'<label class="occchk" style="--sw:'+OCC_COLOR[grp]+'"><input type="checkbox" data-occ="'+grp+'"'+(MAPSHOW[grp]?' checked':'')+'><span class="occsw"></span>'+grp.toUpperCase()+'</label>').join('')+'</div>'+'</div>';
+      else if(key==='maps')ax='<div class="axsel">'+'<label class="occchk"><input type="checkbox" data-sat="1"'+(MAPSAT?' checked':'')+'>SATELLITE</label>'+'<input type="range" data-satop="1" min="0" max="1" step="0.05" value="'+MAPSAT_OP+'" style="width:70px;vertical-align:middle" title="satellite opacity">'+'<label class="occchk" style="margin-left:14px"><input type="checkbox" data-streets="1"'+(MAPSTREETS?' checked':'')+'>STREETS</label>'+'<label class="occchk"><input type="checkbox" data-parks="1"'+(MAPPARKS?' checked':'')+'>PARKS</label>'+'<label class="occchk"><input type="checkbox" data-boundary="1"'+(MAPBOUNDARY?' checked':'')+'>SAD BOUNDARY</label>'
+      +'<span style="margin-left:14px;font:600 9px monospace;color:#666">SIZE</span>'+'<input type="range" data-mapsize="1" min="120" max="760" step="2" value="'+(MAPSIZE||175)+'" style="width:90px;vertical-align:middle" title="thumbnail size">'+'<div class="occfilt">'+OCC_ORDER.map(grp=>'<label class="occchk" style="--sw:'+OCC_COLOR[grp]+'"><input type="checkbox" data-occ="'+grp+'"'+(MAPSHOW[grp]?' checked':'')+'><span class="occsw"></span>'+grp.toUpperCase()+'</label>').join('')+'</div>'+'</div>';
       else if(key==='matrix'){ax='<div class="wwrap"><div class="wdesc">Weight the dimensions to re-rank the overall match by what matters to your project. Individual lens columns stay unweighted.</div><div class="axsel wsel">'+LENS_KEYS.map(lk=>'<label class="wlab" title="'+(LENS_TIP[lk]||'')+'">'+({economic:'Econ',form:'Form',program:'Prog',temporal:'Day',access:'Access',anchor:'Anchor'}[lk])+'<input type="range" min="0" max="3" step="0.1" value="'+WEIGHTS[lk]+'" data-wt="'+lk+'" title="'+(LENS_TIP[lk]||'')+'"><span class="wval" data-wval="'+lk+'">'+(+WEIGHTS[lk]).toFixed(1)+'</span></label>').join('')+'<button class="ghost" data-wreset="1">reset</button></div></div>';}
     else ax='<span></span>';
     const b=document.createElement('div');b.className='block'+(out.center?' center':'');
@@ -1111,6 +1119,7 @@ function render(){
   sheet.querySelectorAll('[data-streets]').forEach(s=>s.addEventListener('change',e=>{MAPSTREETS=e.target.checked;render();}));
   sheet.querySelectorAll('[data-parks]').forEach(s=>s.addEventListener('change',e=>{MAPPARKS=e.target.checked;render();}));
   sheet.querySelectorAll('[data-boundary]').forEach(s=>s.addEventListener('change',e=>{MAPBOUNDARY=e.target.checked;render();}));
+  sheet.querySelectorAll('[data-mapsize]').forEach(s=>s.addEventListener('input',e=>{MAPSIZE=+e.target.value;render();}));
   sheet.querySelectorAll('[data-occ]').forEach(c=>c.addEventListener('change',e=>{MAPSHOW[e.target.dataset.occ]=e.target.checked?1:0;render();}));
 
   sheet.querySelectorAll('[data-wreset]').forEach(b=>b.addEventListener('click',()=>{LENS_KEYS.forEach(lk=>WEIGHTS[lk]=1);render();}));
