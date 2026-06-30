@@ -31,37 +31,28 @@ MAX_BLDGS = 1200        # cap per district (keep the largest by area)
 OUT = '/data/_compare_ui/thumbnails.json'
 
 # occupancy: FEMA occ class first (richly populated), then program, then building tag.
-OCC_GROUPS = ['sport','retail/food/ent','office','residential','hotel','civic/edu','industrial','parking','unclassified']
-def _occ_group_props(props):
-    fc = str(props.get('fema_occ_cls') or '').strip().lower()
-    fp = str(props.get('fema_prim_occ') or '').strip().lower()
-    if fc and fc != 'unclassified':
-        if 'residential' in fc: return 'residential'
-        if 'commercial' in fc: return 'retail/food/ent'
-        if 'education' in fc or 'government' in fc or 'religious' in fc: return 'civic/edu'
-        if 'industrial' in fc: return 'industrial'
-        if 'assembly' in fc:
-            if any(k in fp for k in ['stadium','arena','sport']): return 'sport'
-            return 'civic/edu'
-    dp = str(props.get('dominant_program_inside') or '').strip().lower()
-    if dp:
-        if 'sport' in dp: return 'sport'
-        if 'retail' in dp or 'food' in dp or 'entertainment' in dp: return 'retail/food/ent'
-        if 'office' in dp: return 'office'
-        if 'hotel' in dp: return 'hotel'
-        if 'parking' in dp: return 'parking'
-    b = str(props.get('building') or '').lower()
-    if b and b not in ('yes','true','1'):
-        if any(k in b for k in ['stadium','sport','arena']): return 'sport'
-        if any(k in b for k in ['apartment','residential','house','dormitory']): return 'residential'
-        if any(k in b for k in ['retail','commercial','shop']): return 'retail/food/ent'
-        if 'office' in b: return 'office'
-        if any(k in b for k in ['hotel','motel']): return 'hotel'
-        if any(k in b for k in ['parking','garage']): return 'parking'
-        if any(k in b for k in ['industrial','warehouse']): return 'industrial'
-    return 'unclassified'
+OCC_GROUPS = ['residential','hotel/institutional','retail','office','entertainment','civic/medical/parking','industrial/service','other']
+import re as _re
+def _nsi_group(occtype):
+    if not occtype: return 'other'
+    m = _re.match(r'^([A-Z]+)(\d+)', str(occtype))
+    if not m: return 'other'
+    fam, num = m.group(1), int(m.group(2))
+    if fam=='RES':
+        if num==4: return 'hotel/institutional'
+        return 'residential'
+    if fam=='COM':
+        if num==1: return 'retail'
+        if num==4: return 'office'
+        if num in (8,9): return 'entertainment'
+        if num in (2,3): return 'industrial/service'
+        return 'civic/medical/parking'
+    if fam=='IND': return 'industrial/service'
+    if fam=='AGR': return 'industrial/service'
+    if fam in ('REL','EDU','GOV'): return 'civic/medical/parking'
+    return 'other'
 def occ_code(props):
-    return OCC_GROUPS.index(_occ_group_props(props))
+    return OCC_GROUPS.index(_nsi_group(props.get('occtype')))
 
 def height_levels(props):
     for k in ('building:levels','num_story','fema_height'):
@@ -254,12 +245,30 @@ def process_district(path):
                         xs.append(pt[0]); ys.append(pt[1])
             if xs:
                 bcenter=_norm_pt(sum(xs)/len(xs), sum(ys)/len(ys))
+            # simplified boundary ring(s) for the toggle
+            bpoly=[]
+            for f in bd.get('features',[]):
+                g=f.get('geometry') or {}; t=g.get('type'); cs=g.get('coordinates')
+                bpolys = cs if t=='MultiPolygon' else [cs] if t=='Polygon' else []
+                for poly in bpolys:
+                    if not poly: continue
+                    ext=poly[0]
+                    if len(ext)<4: continue
+                    norm=[[ (pt[0]-minx)/spanx*1000, (1-(pt[1]-miny)/spany)*1000 ] for pt in ext]
+                    simp=simplify_ring(norm, SIMPLIFY_TOL)
+                    if len(simp)<3: continue
+                    flat=[]
+                    for x,y in simp: flat.append(int(round(x))); flat.append(int(round(y)))
+                    bpoly.append(flat)
             del bd
         except Exception: pass
     out['parks']=parks
     out['streets']=streets
     out['stw']=stw
     if bcenter: out['bcenter']=bcenter
+    try:
+        if bpoly: out['bpoly']=bpoly
+    except NameError: pass
     del d, feats, raw, items
     gc.collect()
     return out
