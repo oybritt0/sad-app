@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>District Viewer — Compare</title>
+<title>District Viewer â€” Compare</title>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-/* compare.css â€” Synthesis Field (v2)
+/* compare.css Ã¢â‚¬â€ Synthesis Field (v2)
    Warm architectural minimalism: paper shell, near-black ink, a single coral
    accent, an editorial serif for headings against a clean grotesque + mono.
    The dark field is the centerpiece; per-district slot colors tie the panel. */
@@ -41,7 +41,7 @@ body {
 body.resizing { cursor: col-resize; user-select: none; }
 .mono { font-family: var(--mono); }
 
-/* —€—€ top bar —€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€ */
+/* â€”â‚¬â€”â‚¬ top bar â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬ */
 .topbar {
   flex: 0 0 auto; height: 58px; display: flex; align-items: center;
   justify-content: space-between; padding: 0 20px;
@@ -90,7 +90,7 @@ body.resizing { cursor: col-resize; user-select: none; }
 .slider input[type=range]::-webkit-slider-thumb:hover { border-color: var(--accent); }
 .slider input[type=range]::-moz-range-thumb { width: 13px; height: 13px; border-radius: 50%; background: var(--paper); border: 1.5px solid var(--ink); cursor: pointer; }
 
-/* —€—€ layout —€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€ */
+/* â€”â‚¬â€”â‚¬ layout â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬ */
 .layout { flex: 1 1 auto; display: flex; min-height: 0; }
 
 .rail {
@@ -108,7 +108,7 @@ body.resizing { cursor: col-resize; user-select: none; }
 .legend-row { display: flex; align-items: center; gap: 9px; padding: 4px 0; text-transform: capitalize; color: var(--ink-2); font-size: 12px; }
 .dot { width: 9px; height: 9px; border-radius: 50%; flex: 0 0 auto; }
 
-/* —€—€ stage / field —€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€ */
+/* â€”â‚¬â€”â‚¬ stage / field â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬ */
 .stage {
   flex: 1 1 auto; position: relative; min-width: 0;
   background: radial-gradient(ellipse 90% 80% at 50% 42%, var(--field-2) 0%, var(--field) 70%);
@@ -129,7 +129,7 @@ body.resizing { cursor: col-resize; user-select: none; }
 }
 .pt-label.sel { color: #fff; font-weight: 500; }
 
-/* —€—€ splitter —€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€ */
+/* â€”â‚¬â€”â‚¬ splitter â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬ */
 .splitter {
   flex: 0 0 auto; width: 9px; cursor: col-resize; background: var(--paper);
   border-left: 1px solid var(--line); display: flex; align-items: center; justify-content: center;
@@ -137,7 +137,7 @@ body.resizing { cursor: col-resize; user-select: none; }
 .splitter span { width: 2px; height: 26px; border-radius: 2px; background: var(--line); transition: var(--ease); }
 .splitter:hover span { background: var(--accent); }
 
-/* —€—€ panel —€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€ */
+/* â€”â‚¬â€”â‚¬ panel â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬ */
 .panel {
   width: 400px; flex: 0 0 auto; background: var(--paper);
   display: flex; flex-direction: column; min-height: 0;
@@ -187,7 +187,7 @@ body.resizing { cursor: col-resize; user-select: none; }
 .nb-bar span { display: block; height: 100%; background: var(--accent); }
 .nb-d { font-size: 10.5px; color: var(--ink-3); text-align: right; }
 
-/* comparison table â€” scrolls horizontally instead of clipping */
+/* comparison table Ã¢â‚¬â€ scrolls horizontally instead of clipping */
 .cmp-scroll { overflow-x: auto; margin: 0 -4px; padding: 0 4px; }
 .cmp-scroll::-webkit-scrollbar { height: 8px; }
 .cmp-scroll::-webkit-scrollbar-thumb { background: var(--line); border-radius: 4px; }
@@ -205,7 +205,7 @@ body.resizing { cursor: col-resize; user-select: none; }
 .rail::-webkit-scrollbar { width: 9px; }
 .rail::-webkit-scrollbar-thumb { background: var(--line); }
 
-/* —€—€ metric info: hover tooltip + click card —€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€ */
+/* â€”â‚¬â€”â‚¬ metric info: hover tooltip + click card â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬ */
 .has-info { cursor: help; }
 .rose .axlab.has-info { text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 2px; text-decoration-color: var(--ink-3); }
 .cmp .rowlab.has-info { text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 2px; text-decoration-color: var(--line); }
@@ -248,7 +248,7 @@ body.resizing { cursor: col-resize; user-select: none; }
 }
 .m-mapbtn:hover { background: var(--accent); }
 
-/* —€—€ census map modal —€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€ */
+/* â€”â‚¬â€”â‚¬ census map modal â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬ */
 .cmap-modal {
   position: fixed; inset: 0; z-index: 90; background: var(--paper);
   display: none; flex-direction: column;
@@ -280,7 +280,7 @@ body.resizing { cursor: col-resize; user-select: none; }
 .cmap-legend .lg-min, .cmap-legend .lg-max { font-family: var(--mono); font-size: 10.5px; color: var(--ink-3); }
 .leaflet-tooltip .t-sub { color: #8a8178; font-size: 10px; }
 
-/* —€—€ integration + draw-a-district —€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€ */
+/* â€”â‚¬â€”â‚¬ integration + draw-a-district â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬ */
 .btn.accent { background: var(--accent); color: #fff; border-color: var(--accent); }
 .btn.accent:hover { background: #ec4a36; border-color: #ec4a36; }
 a.btn.vlink { text-decoration: none; display: inline-flex; align-items: center; }
@@ -349,7 +349,7 @@ a.btn.vlink { text-decoration: none; display: inline-flex; align-items: center; 
 .legend-ctrl a:hover { color: var(--accent, #ef3006); }
 .legend-ctrl a.on { color: var(--accent, #ef3006); }
 
-/* —€—€ district selector (rail) —€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€ */
+/* â€”â‚¬â€”â‚¬ district selector (rail) â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬ */
 .dsel { font-size: 12px; }
 .ds-head { display: flex; flex-direction: column; gap: 7px; margin-bottom: 8px; }
 .ds-filter {
@@ -381,7 +381,7 @@ a.btn.vlink { text-decoration: none; display: inline-flex; align-items: center; 
   letter-spacing: 0.06em; margin: 10px 0 4px; padding-top: 8px; border-top: 1px solid var(--line);
 }
 
-/* —€—€ typology picker (detail panel) —€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€ */
+/* â€”â‚¬â€”â‚¬ typology picker (detail panel) â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬ */
 .typo-sec { }
 .t-cur { margin-bottom: 9px; }
 .t-chip { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; color: var(--ink); }
@@ -406,7 +406,7 @@ a.btn.vlink { text-decoration: none; display: inline-flex; align-items: center; 
 .t-sug-row .mini { margin-left: 0; }
 .t-ev { margin-top: 6px; }
 
-/* —€—€ parcels (detail panel) —€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€—€ */
+/* â€”â‚¬â€”â‚¬ parcels (detail panel) â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬â€”â‚¬ */
 .parcel-sec .p-stats {
   font-size: 12px; color: var(--ink-2); line-height: 1.5; margin-bottom: 10px;
 }
@@ -422,13 +422,13 @@ a.btn.vlink { text-decoration: none; display: inline-flex; align-items: center; 
 .parcel-sec .p-row .mono { color: var(--ink-3); flex: 0 0 auto; }
 .parcel-sec .p-zoning, .parcel-sec .p-near { margin-top: 6px; }
 
-/* topbar brand image — matches the viewer's logo */
+/* topbar brand image â€” matches the viewer's logo */
 .brand-logo { height: 32px; width: auto; display: block; }
 
 
 
 
-/* compare tab layer — flowing sections on the tool's own language, no boxed cards */
+/* compare tab layer â€” flowing sections on the tool's own language, no boxed cards */
 body{display:flex;flex-direction:column;overflow:hidden}
 .ctrl{flex:0 0 auto;display:flex;align-items:center;gap:22px;padding:15px 26px;border-bottom:1px solid var(--line);background:var(--paper);flex-wrap:wrap}
 .ctrl .k{font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-3);margin-right:9px}
@@ -452,7 +452,7 @@ select{font:inherit;font-size:12px;padding:6px 24px 6px 10px;border:1px solid va
 .ghost{font:500 10px/1 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);background:none;border:none;cursor:pointer;padding:4px 2px}
 .ghost:hover{color:var(--accent)}
 .ghost+.ghost{margin-left:16px}
-/* enlarge modal — matches the tool's dialog */
+/* enlarge modal â€” matches the tool's dialog */
 .ovl{position:fixed;inset:0;background:rgba(20,17,14,.55);display:none;align-items:center;justify-content:center;z-index:2000;padding:34px}
 .ovl.on{display:flex}
 .ovl-box{background:var(--paper);border:1px solid var(--line);border-radius:10px;box-shadow:0 24px 64px rgba(20,17,14,.28);max-width:1020px;width:100%;max-height:92vh;overflow:auto;padding:24px 28px}
@@ -477,7 +477,7 @@ select{font:inherit;font-size:12px;padding:6px 24px 6px 10px;border:1px solid va
 <div class="ctrl">
   <div class="fld"><span class="k">Focus</span><select id="focus"></select></div>
   <div class="fld"><span class="k">Against</span><div class="chips" id="chips"></div></div>
-  <div class="fld" style="margin-left:auto"><select id="add"><option value="">+ add district…</option></select></div>
+  <div class="fld" style="margin-left:auto"><select id="add"><option value="">+ add districtâ€¦</option></select></div>
 </div>
 <div class="scroll"><div class="sheet" id="sheet"></div></div>
 <div class="foot" id="foot"></div>
@@ -653,7 +653,7 @@ function cScatter(){
   ss.forEach(id=>{const r=byId[id],xv=+gx[3](r),yv=+gy[3](r);if(!isFinite(xv)||!isFinite(yv))return;const foc=id===FOCUS,c=colorOf(id);
     inner+='<circle cx="'+px(xv).toFixed(1)+'" cy="'+py(yv).toFixed(1)+'" r="'+(foc?7.5:6)+'" fill="'+c+'" stroke="#ffffff" stroke-width="2"/>';
     inner+='<text x="'+(px(xv)+10).toFixed(1)+'" y="'+(py(yv)+3.5).toFixed(1)+'" class="lab" style="font-size:10.5px;fill:#000000">'+esc(r.name)+'</text>';});
-  return {title:gy[1]+' vs '+gx[1],svg:svg(W,H,gy[1]+' vs '+gx[1],'all 37 · selection highlighted',inner)};
+  return {title:gy[1]+' vs '+gx[1],svg:svg(W,H,gy[1]+' vs '+gx[1],'all 37 Â· selection highlighted',inner)};
 }
 function cRank(){
   const g=MGET[RANKM];const W=800,top=74,rowH=21;
@@ -663,7 +663,7 @@ function cRank(){
     inner+='<text x="20" y="'+(y+11)+'" class="'+(inSel?'lab':'axlab')+'" style="'+(inSel?'fill:#000000;font-weight:600;font-size:11.5px':'')+'">'+esc(x.r.name)+'</text>';
     inner+='<rect x="'+pad+'" y="'+(y+3)+'" width="'+(bw*x.v/mx).toFixed(1)+'" height="11" rx="3" fill="'+c+'"/>';
     inner+='<text x="'+(W-20)+'" y="'+(y+12)+'" text-anchor="end" class="mono" style="'+(inSel?'fill:#000000':'')+'">'+fmtV(x.v,g[2])+'</text>';});
-  return {title:'Ranked · '+g[1],svg:svg(W,H,'Ranked · '+g[1],'all 37 districts',inner)};
+  return {title:'Ranked Â· '+g[1],svg:svg(W,H,'Ranked Â· '+g[1],'all 37 districts',inner)};
 }
 function cRadial(){
   const ss=sel(),W=800,H=470,cols=3,R=70,topY=92,torad=d=>d*Math.PI/180;
@@ -1088,6 +1088,13 @@ function methodHTML(key){
   h+='<div style="margin-top:12px;font-family:monospace;font-size:10px;color:#8a8a8a">Corpus = 41 studied districts. Percentiles vs corpus. US-only data absent for 4 Canadian districts.</div>';
   return h;
 }
+function updateMapsChart(srcEl){
+  // Redraw ONLY the maps chart SVG so the control bar / dragged slider survive.
+  let out; try{ out=cMaps(); }catch(e){ return; }
+  LAST['maps']=out.svg;
+  const block = srcEl && srcEl.closest ? srcEl.closest('.block') : null;
+  if(block){ const c=block.querySelector('.chart'); if(c) c.innerHTML=out.svg; }
+}
 function render(){
   const sheet=document.getElementById('sheet');sheet.innerHTML='';LAST={};
   CHARTS.forEach(([key,fn])=>{let out;try{out=fn();}catch(err){out={title:key,svg:'<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 800 90\"><rect width=\"800\" height=\"90\" fill=\"#ffffff\"/><text x=\"20\" y=\"34\" style=\"font:700 14px Arial;fill:#d64545\">'+key+' panel error</text><text x=\"20\" y=\"58\" style=\"font:11px monospace;fill:#5a5a5a\">'+String(err&&err.message||err).slice(0,90)+'</text></svg>'};}LAST[key]=out.svg;
@@ -1114,26 +1121,26 @@ function render(){
   sheet.querySelectorAll('[data-anmode]').forEach(s=>s.addEventListener('change',e=>{ANMODE=e.target.value;render();}));
   sheet.querySelectorAll('[data-fpmode]').forEach(s=>s.addEventListener('change',e=>{FPMODE=e.target.value;render();}));
   sheet.querySelectorAll('[data-wt]').forEach(s=>s.addEventListener('input',e=>{WEIGHTS[e.target.dataset.wt]=+e.target.value;render();}));
-  sheet.querySelectorAll('[data-sat]').forEach(s=>s.addEventListener('change',e=>{MAPSAT=e.target.checked;render();}));
-  sheet.querySelectorAll('[data-satop]').forEach(s=>s.addEventListener('input',e=>{MAPSAT_OP=+e.target.value;render();}));
-  sheet.querySelectorAll('[data-streets]').forEach(s=>s.addEventListener('change',e=>{MAPSTREETS=e.target.checked;render();}));
-  sheet.querySelectorAll('[data-parks]').forEach(s=>s.addEventListener('change',e=>{MAPPARKS=e.target.checked;render();}));
-  sheet.querySelectorAll('[data-boundary]').forEach(s=>s.addEventListener('change',e=>{MAPBOUNDARY=e.target.checked;render();}));
-  sheet.querySelectorAll('[data-mapsize]').forEach(s=>s.addEventListener('input',e=>{MAPSIZE=+e.target.value;render();}));
-  sheet.querySelectorAll('[data-occ]').forEach(c=>c.addEventListener('change',e=>{MAPSHOW[e.target.dataset.occ]=e.target.checked?1:0;render();}));
+  sheet.querySelectorAll('[data-sat]').forEach(s=>s.addEventListener('change',e=>{MAPSAT=e.target.checked;updateMapsChart(e.target);}));
+  sheet.querySelectorAll('[data-satop]').forEach(s=>s.addEventListener('input',e=>{MAPSAT_OP=+e.target.value;updateMapsChart(e.target);}));
+  sheet.querySelectorAll('[data-streets]').forEach(s=>s.addEventListener('change',e=>{MAPSTREETS=e.target.checked;updateMapsChart(e.target);}));
+  sheet.querySelectorAll('[data-parks]').forEach(s=>s.addEventListener('change',e=>{MAPPARKS=e.target.checked;updateMapsChart(e.target);}));
+  sheet.querySelectorAll('[data-boundary]').forEach(s=>s.addEventListener('change',e=>{MAPBOUNDARY=e.target.checked;updateMapsChart(e.target);}));
+  sheet.querySelectorAll('[data-mapsize]').forEach(s=>s.addEventListener('input',e=>{MAPSIZE=+e.target.value;updateMapsChart(e.target);}));
+  sheet.querySelectorAll('[data-occ]').forEach(c=>c.addEventListener('change',e=>{MAPSHOW[e.target.dataset.occ]=e.target.checked?1:0;updateMapsChart(e.target);}));
 
   sheet.querySelectorAll('[data-wreset]').forEach(b=>b.addEventListener('click',()=>{LENS_KEYS.forEach(lk=>WEIGHTS[lk]=1);render();}));
   renderChips();renderAdd();
-  document.getElementById('foot').textContent='Focus: '+byId[FOCUS].name+' · '+COMPS.length+' comparison'+(COMPS.length===1?'':'s')+' · '+ROWS.length+' in corpus · enlarge or download any diagram as a slide-ready PNG.';
+  document.getElementById('foot').textContent='Focus: '+byId[FOCUS].name+' Â· '+COMPS.length+' comparison'+(COMPS.length===1?'':'s')+' Â· '+ROWS.length+' in corpus Â· enlarge or download any diagram as a slide-ready PNG.';
 }
 function openBig(key){const o=document.getElementById('ovl');document.getElementById('ovl-body').innerHTML=LAST[key];
   document.getElementById('ovl-png').onclick=()=>svgToPng(LAST[key],'SAD_'+key+'_'+byId[FOCUS].name.replace(/\s+/g,'-'));o.classList.add('on');}
 document.getElementById('ovl-close').addEventListener('click',()=>document.getElementById('ovl').classList.remove('on'));
 document.getElementById('ovl').addEventListener('click',e=>{if(e.target.id==='ovl')e.currentTarget.classList.remove('on');});
 function renderChips(){document.getElementById('chips').innerHTML=sel().map(id=>{const r=byId[id],foc=id===FOCUS;
-  return '<span class="chip"><span class="chip-key" style="background:'+colorOf(id)+'"></span><span class="chip-name">'+r.name+'</span>'+(foc?'':'<span class="x" data-rm="'+id+'">×</span>')+'</span>';}).join('');
+  return '<span class="chip"><span class="chip-key" style="background:'+colorOf(id)+'"></span><span class="chip-name">'+r.name+'</span>'+(foc?'':'<span class="x" data-rm="'+id+'">Ã—</span>')+'</span>';}).join('');
   document.querySelectorAll('#chips .x').forEach(x=>x.addEventListener('click',()=>{COMPS=COMPS.filter(c=>c!==x.dataset.rm);render();}));}
-function renderAdd(){const s=sel();document.getElementById('add').innerHTML='<option value="">+ add district…</option>'+ROWS.filter(r=>!s.includes(r.sad_id)).sort((a,b)=>a.name.localeCompare(b.name)).map(r=>'<option value="'+r.sad_id+'">'+r.name+' · '+r.city+'</option>').join('');}
+function renderAdd(){const s=sel();document.getElementById('add').innerHTML='<option value="">+ add districtâ€¦</option>'+ROWS.filter(r=>!s.includes(r.sad_id)).sort((a,b)=>a.name.localeCompare(b.name)).map(r=>'<option value="'+r.sad_id+'">'+r.name+' Â· '+r.city+'</option>').join('');}
 function initControls(){
   const fsel=document.getElementById('focus');
   fsel.innerHTML='';
