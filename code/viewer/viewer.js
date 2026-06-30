@@ -271,12 +271,19 @@ const state = {
   buildHeatSwatch();
   wireControls();
   if (state.manifest.sads.length > 0) {
-    // Default to District Detroit if available, else first SAD
+    // Deep link: ?sad=<id> selects that district; else default to District Detroit.
+    let target = null;
+    try {
+      const want = new URLSearchParams(window.location.search).get('sad');
+      if (want) target = state.manifest.sads.find(s => s.sad_id === want);
+    } catch (e) {}
     const detroit = state.manifest.sads.find(s =>
       (s.sad_id || '').toLowerCase().includes('district-detroit') ||
       (s.sad_name || '').toLowerCase().includes('district detroit'));
-    const defaultSad = detroit || state.manifest.sads[0];
+    const defaultSad = target || detroit || state.manifest.sads[0];
     await selectSad(defaultSad.sad_id);
+    // reflect the active district in the dropdown
+    try { const sel=document.getElementById('sad-select'); if(sel) sel.value=defaultSad.sad_id; } catch(e){}
   }
 })();
 
