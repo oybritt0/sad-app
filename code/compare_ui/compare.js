@@ -205,6 +205,10 @@ async function boot() {
     livework:     { label: 'Live / Work / Play', match: f => ['prog_pct_residential','prog_pct_office','prog_pct_sport','prog_pct_retail_food_entertainment','prog_pct_hotel'].indexOf(f) >= 0 },
     anchor:       { label: 'Anchor',             match: f => f.indexOf('anchor_') === 0 },
     intensity:    { label: 'Intensity',          match: f => ['morph_density_per_km2','morph_coverage','anchor_count_inside'].indexOf(f) >= 0 },
+    progocc:      { label: 'Program (occupancy)', match: f => f.indexOf('progocc_') === 0 },
+    demographics: { label: 'Demographics',        match: f => f.indexOf('demo_') === 0 },
+    economic:     { label: 'Economic',            match: f => f.indexOf('econ_') === 0 },
+    connectivity: { label: 'Connectivity',        match: f => f.indexOf('conn_') === 0 },
   };
   // which families have >= 2 present feature columns
   S.familyCols = {};
@@ -671,6 +675,22 @@ function refreshLinks() {
   g.attributes.position.needsUpdate = true;
 }
 const FAMILY_INFO = {
+  progocc: { title: 'Program (occupancy) \u2014 building use by NSI type',
+    src: 'buildings_enriched (NSI occtype + area) \u00b7 parking from POI tag \u00b7 Module 8 \u00b7 10 features',
+    body: 'Building program by NSI occupancy type, area-weighted, inside the SAD boundary. Each building\u2019s occupancy \u2014 residential, hotel/institutional, retail, office, entertainment, industrial/service, civic/medical, parking, other \u2014 is weighted by footprint area, plus a diversity measure. Program is taken from NSI occtype for every building; the POI tag is used only to identify parking structures (which occtype alone cannot distinguish). This reads the built fabric, distinct from the POI-based Program mix which reads businesses and amenities. Caveat: about half of buildings carry no POI tag, so a parking structure without a POI may still sit in industrial/service.',
+    cap: 'Building use by NSI occupancy, area-weighted (parking split via POI).' },
+  demographics: { title: 'Demographics \u2014 population character, level and trend',
+    src: 'ACS 5-year 2013\u20132023 \u00b7 census_timeseries \u00b7 pop-weighted \u00b7 5 features',
+    body: 'Population and household character inside the SAD from eleven years of American Community Survey data (2013\u20132023): current level (population density, median age, owner-occupancy share) and trend (least-squares slope over the period) for population and ownership. Aggregated population-weighted per block group. US districts only \u2014 non-US districts sit neutrally on these axes.',
+    cap: 'Who lives here now and how it\u2019s changing (2013\u20132023).' },
+  economic: { title: 'Economic \u2014 income and housing cost, level and trend',
+    src: 'ACS 5-year 2013\u20132023 \u00b7 census_timeseries \u00b7 pop-weighted \u00b7 5 features',
+    body: 'Economic indicators from eleven years of ACS data (2013\u20132023): median household income, median home value, and median gross rent as current level, plus income and home-value trend (slope over the period). The income and home-value trends read as a change / gentrification signal \u2014 District Detroit, for instance, shows median income roughly doubling and home value roughly tripling across the decade. US districts only.',
+    cap: 'Income, home value, rent \u2014 current and trajectory.' },
+  connectivity: { title: 'Connectivity \u2014 transit, walkability, and reach',
+    src: 'transit / walkshed / street-centrality summaries \u00b7 area-normalized \u00b7 10 features',
+    body: 'A composite of measured connective signals, area-normalized \u2014 not a single weighted index. Transit access: stations per km\u00b2, routes serving the district, trips per day, service frequency (inverse headway), service span. Reach beyond the SAD: stops in the surrounding buffer and the inside-to-buffer ratio (how much transit sits around rather than within the district, linking it outward). Walkability: walkshed area reachable on foot, mean street centrality, street-segment density. Each is a real measurement from the pipeline; the 3D projection shows how districts array across all of them together.',
+    cap: 'How the district connects: transit, walkability, outward reach.' },
   all: { title: 'All metrics \u2014 full morphometric + program + anchor space',
     src: 'Module 8 embedding \u00b7 20 features \u00b7 in-browser PCA',
     body: 'Projects every district into 3D using all 20 features together: 8 morphometric (building form), 9 program-mix, and 3 anchor-geometry measures. Each feature is z-scored across the corpus, then reduced to three principal components by in-browser PCA. Position encodes overall similarity across all measured dimensions at once. Sources: Overture/OSM building footprints, classified POIs (rod_places), anchor geometry.',
