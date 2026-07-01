@@ -462,6 +462,7 @@ select{font:inherit;font-size:12px;padding:6px 24px 6px 10px;border:1px solid va
 
 </style>
 <style>
+  #ana-entry-wrap { max-width:1150px; margin:0 auto; }
   #ana-entry { border-bottom:1px solid var(--line); padding:12px 16px 16px; background:var(--paper-2); }
   #ana-entry .ae-top { display:flex; align-items:center; gap:14px; margin-bottom:10px; flex-wrap:wrap; }
   #ana-entry .ae-title { font:600 11px var(--mono); letter-spacing:.06em; color:var(--ink-3); text-transform:uppercase; }
@@ -508,6 +509,23 @@ select{font:inherit;font-size:12px;padding:6px 24px 6px 10px;border:1px solid va
   #ae-mcard .x { position:absolute; top:10px; right:12px; background:none; border:none;
     color:var(--ink-3); font-size:17px; cursor:pointer; }
 </style>
+<style>
+  #ana-entry .ae-lhr { display:flex; align-items:center; gap:8px; }
+  #ana-entry .ae-typ { font:10px var(--mono); padding:2px 6px; border:1px solid var(--line);
+    border-radius:100px; background:var(--paper); color:var(--ink); }
+  #ana-entry .ae-wts { padding:7px 10px 9px; border-top:1px solid var(--line-2); }
+  #ana-entry .ae-wrow { display:flex; align-items:center; gap:8px; margin:3px 0; }
+  #ana-entry .ae-wlab { font:10px var(--sans); color:var(--ink-2); flex:0 0 84px; }
+  #ana-entry .ae-wrow input[type=range] { flex:1 1 auto; height:2px; -webkit-appearance:none;
+    appearance:none; background:var(--line); outline:none; }
+  #ana-entry .ae-wrow input[type=range]::-webkit-slider-thumb { -webkit-appearance:none;
+    width:11px; height:11px; border-radius:50%; background:var(--paper); border:1.5px solid var(--ink); cursor:pointer; }
+  #ana-entry .ae-wrow input[type=range]::-moz-range-thumb { width:11px; height:11px; border-radius:50%;
+    background:var(--paper); border:1.5px solid var(--ink); cursor:pointer; }
+  #ana-entry .ae-wval { font:10px var(--mono); color:var(--ink-3); flex:0 0 22px; text-align:right; }
+  #ana-entry .ae-wreset { display:inline-block; margin-top:4px; font:9px var(--sans); color:var(--accent);
+    text-decoration:underline; cursor:pointer; }
+</style>
 </head>
 <body>
 <header class="topbar">
@@ -518,7 +536,7 @@ select{font:inherit;font-size:12px;padding:6px 24px 6px 10px;border:1px solid va
   <nav class="nav-seg">
     <a class="seg" href="map.html">Map</a><a class="seg on" href="compare.html">Compare</a>
     <a class="seg" href="./">Field</a>
-      <a class="seg" href="analogues.html">Analogues</a><a class="seg" href="../_ui/">Viewer</a>
+      <a class="seg" href="../_ui/">Viewer</a>
   </nav>
   <div class="toolbar"></div>
 </header>
@@ -527,7 +545,8 @@ select{font:inherit;font-size:12px;padding:6px 24px 6px 10px;border:1px solid va
   <div class="fld"><span class="k">Against</span><div class="chips" id="chips"></div></div>
   <div class="fld" style="margin-left:auto"><select id="add"><option value="">+ add district…</option></select></div>
 </div>
-<div id="ana-entry">
+<div id="ae-mback"></div><div id="ae-mcard"></div>
+<div class="scroll"><div id="ana-entry-wrap"><div id="ana-entry">
   <div class="ae-top">
     <span class="ae-title">Analogues</span>
     <span class="ae-sub">Precedents for the study district — click to add to the comparison below.</span>
@@ -537,9 +556,7 @@ select{font:inherit;font-size:12px;padding:6px 24px 6px 10px;border:1px solid va
     </span>
   </div>
   <div class="ae-cols" id="ae-cols"></div>
-</div>
-<div id="ae-mback"></div><div id="ae-mcard"></div>
-<div class="scroll"><div class="sheet" id="sheet"></div></div>
+</div></div><div class="sheet" id="sheet"></div></div>
 <div class="foot" id="foot"></div>
 <div class="ovl" id="ovl"><div class="ovl-box"><div class="ovl-head"><button class="ghost" id="ovl-png">Download PNG</button><button class="ghost" id="ovl-close">Close</button></div><div id="ovl-body"></div></div></div>
 
@@ -1211,108 +1228,139 @@ function initControls(){
 }
 
 
-// ─── Analogue entry: embedding-based composite lenses (current / trajectory / target) ───
-let AE_FN=[], AE_VEC={}, AE_METRIC='cosine';
+// --- Analogue entry: embedding composite lenses + per-family weights + target typology ---
+let AE_FN=[], AE_VEC={}, AE_METRIC='cosine', AE_TARGET_TYP=null;
 const AE_LENSES=[
-  { key:'current', title:'Current condition', q:'Places like the site now',
-    match:f=> f.indexOf('conn_')===0 || f.indexOf('morph_')===0 ||
-      ['demo_pop_density','demo_median_age','demo_pct_owner_occupied',
-       'econ_median_income','econ_median_home_value','econ_median_gross_rent'].indexOf(f)>=0,
-    typFilter:false,
-    note:'24 measures: connectivity, built form, demographics & economics (present levels). Z-scored embedding; no typology filter.' },
-  { key:'trajectory', title:'Trajectory', q:'Similar change over time',
-    match:f=> f.slice(-6)==='_trend', typFilter:false,
-    note:'4 measures: income, home-value, population & ownership trend (2013–2023). Narrow lens — high % is easier here; means similar rate/direction of change.' },
-  { key:'target', title:'Target character', q:'References for the intended character',
-    match:f=> f.indexOf('morph_')===0 || f.indexOf('progocc_')===0 || f.indexOf('anchor_')===0,
-    typFilter:true,
-    note:'21 measures: built form, NSI occupancy program, anchor. Filtered to the study district’s typology. Anchor is zero for many districts.' },
+  { key:'current', title:'Current condition', q:'Places like the site now', typFilter:false,
+    note:'Connectivity, built form, demographics & economics (present levels), z-scored embedding. No typology filter.' },
+  { key:'trajectory', title:'Trajectory', q:'Similar change over time', typFilter:false,
+    note:'Income, home-value, population & ownership trend (2013-2023). Narrow lens; means similar rate/direction of change.' },
+  { key:'target', title:'Target character', q:'References for the intended character', typFilter:true,
+    note:'Built form, NSI occupancy program, anchor. Filtered to the chosen target typology. Anchor is zero for many districts.' },
 ];
-const AE_METHOD={
-  current:{title:'Current condition — the site as it exists',
-    src:'Module 8 embedding · 24 z-scored features',
-    body:'Ranks districts by similarity to the study district across connectivity, built form, and present-day demographics and economics. Each feature is standardised across the corpus so none dominates by scale. No typology filter — it finds places like the site as it is today, whatever their classification.',
-    cav:'Drawn/synthetic and data-incomplete districts are excluded. Scores span all 24 measures, so they are lower and more spread than a narrow lens.'},
-  trajectory:{title:'Trajectory — the journey, not the snapshot',
-    src:'Module 8 · 4 trend features · 11-year ACS (2013–2023)',
-    body:'Ranks districts by similarity in how they changed over 2013–2023: the slope of median income, home value, population, and ownership. Profile similarity means a similar pattern of change; magnitude similarity means a similar amount of change.',
-    cav:'Only 4 measures — a narrow, specific signal; high percentages should not be read as broader confidence. US districts only.'},
-  target:{title:'Target character — the form you are aiming for',
-    src:'Module 8 · 21 features (form + occupancy program + anchor)',
-    body:'Filters the corpus to the study district’s typology, then ranks those by similarity in built form, NSI occupancy program, and anchor geometry — the formal and programmatic references for the intended character.',
-    cav:'Anchor geometry is zero for many districts, so it contributes little. Typology labels come from the corpus classification.'},
+// families within each lens (embedding feature prefixes)
+const AE_FAMILIES={
+  current:[
+    {key:'conn',label:'Connectivity',match:f=>f.indexOf('conn_')===0},
+    {key:'form',label:'Built form',match:f=>f.indexOf('morph_')===0},
+    {key:'demo',label:'Demographics',match:f=>['demo_pop_density','demo_median_age','demo_pct_owner_occupied'].indexOf(f)>=0},
+    {key:'econ',label:'Economics',match:f=>['econ_median_income','econ_median_home_value','econ_median_gross_rent'].indexOf(f)>=0},
+  ],
+  trajectory:[
+    {key:'econtr',label:'Economic trend',match:f=>f.indexOf('econ_')===0&&f.slice(-6)==='_trend'},
+    {key:'demotr',label:'Demographic trend',match:f=>f.indexOf('demo_')===0&&f.slice(-6)==='_trend'},
+  ],
+  target:[
+    {key:'form',label:'Built form',match:f=>f.indexOf('morph_')===0},
+    {key:'prog',label:'Program',match:f=>f.indexOf('progocc_')===0},
+    {key:'anchor',label:'Anchor',match:f=>f.indexOf('anchor_')===0},
+  ],
 };
-function _aeSub(vec,cols){ return cols.map(i=>vec[i]); }
-function _aeCos(a,b){ let d=0,na=0,nb=0; for(let i=0;i<a.length;i++){d+=a[i]*b[i];na+=a[i]*a[i];nb+=b[i]*b[i];}
-  return (na===0||nb===0)?0:d/Math.sqrt(na*nb); }
-function _aeEuc(a,b){ let s=0; for(let i=0;i<a.length;i++){const d=a[i]-b[i];s+=d*d;} return Math.sqrt(s); }
-function _aeDrawn(id){ return /drawn/i.test(id); }
-function _aeReal(id,cols){ const raw=(byId[id]&&byId[id]._normraw)||null; return true; } // vec presence checked at load
+let AE_WEIGHTS={}; // {lensKey:{familyKey:weight}}
+function aeResetWeights(lk){ AE_WEIGHTS[lk]={}; AE_FAMILIES[lk].forEach(fm=>AE_WEIGHTS[lk][fm.key]=1); }
+const AE_METHOD={
+  current:{title:'Current condition \u2014 the site as it exists',
+    src:'Module 8 embedding \u00b7 connectivity + built form + demographics + economics',
+    body:'Ranks districts by similarity to the study district across connectivity, built form, and present-day demographics and economics, each standardised across the corpus. Use the weight sliders to emphasise the families that matter for this project \u2014 the ranking updates live. No typology filter.',
+    cav:'Drawn/synthetic and data-incomplete districts are excluded. A weight of 0 removes a family entirely.'},
+  trajectory:{title:'Trajectory \u2014 the journey, not the snapshot',
+    src:'Module 8 \u00b7 income / home-value / population / ownership trend (2013-2023)',
+    body:'Ranks districts by similarity in how they changed over 2013-2023. Weight economic vs demographic change to focus the comparison. Profile similarity means a similar pattern of change; magnitude means a similar amount.',
+    cav:'A narrow signal (few measures); high percentages should not be read as broad confidence. US districts only.'},
+  target:{title:'Target character \u2014 the form you are aiming for',
+    src:'Module 8 \u00b7 built form + occupancy program + anchor',
+    body:'Filters the corpus to the chosen target typology, then ranks those by similarity in built form, occupancy program, and anchor. Set the target character to the district type you intend to create \u2014 which need not match the study district today.',
+    cav:'Anchor geometry is zero for many districts. Typology labels come from the corpus classification.'},
+};
+function _aeCos(a,b){let d=0,na=0,nb=0;for(let i=0;i<a.length;i++){d+=a[i]*b[i];na+=a[i]*a[i];nb+=b[i]*b[i];}return(na===0||nb===0)?0:d/Math.sqrt(na*nb);}
+function _aeEuc(a,b){let s=0;for(let i=0;i<a.length;i++){const d=a[i]-b[i];s+=d*d;}return Math.sqrt(s);}
+function _aeDrawn(id){return /drawn/i.test(id);}
+function _aeWeightedSub(vec,cols,wsqrt){const o=new Array(cols.length);for(let i=0;i<cols.length;i++)o[i]=vec[cols[i]]*wsqrt[i];return o;}
 function aeAnalogues(lens,k){
-  const cols=lens._cols, q=AE_VEC[FOCUS]; if(!q) return [];
-  const qv=_aeSub(q,cols); const ftyp=(byId[FOCUS]||{}).typology; const out=[];
+  const cols=lens._cols; const q=AE_VEC[FOCUS]; if(!q||!cols.length) return [];
+  // per-col sqrt(weight) from this lens's family weights
+  const wmap=AE_WEIGHTS[lens.key]||{};
+  const wsqrt=lens._colFam.map(fk=>Math.sqrt(Math.max(0,(wmap[fk]!=null?wmap[fk]:1))));
+  const qv=_aeWeightedSub(q,cols,wsqrt);
+  const ftyp = lens.typFilter ? AE_TARGET_TYP : null;
+  const out=[];
   for(const id in AE_VEC){
-    if(id===FOCUS || _aeDrawn(id)) continue;
+    if(id===FOCUS||_aeDrawn(id)) continue;
     if(lens.typFilter && ftyp && (byId[id]||{}).typology!==ftyp) continue;
-    const sv=_aeSub(AE_VEC[id],cols);
+    const sv=_aeWeightedSub(AE_VEC[id],cols,wsqrt);
     const val = AE_METRIC==='cosine' ? _aeCos(qv,sv) : _aeEuc(qv,sv);
     out.push({id,val});
   }
-  out.sort((a,b)=> AE_METRIC==='cosine' ? b.val-a.val : a.val-b.val);
+  out.sort((a,b)=> AE_METRIC==='cosine'? b.val-a.val : a.val-b.val);
   return out.slice(0,k);
+}
+function _aeSliders(lens){
+  const fams=AE_FAMILIES[lens.key]||[]; const w=AE_WEIGHTS[lens.key]||{};
+  let h='<div class="ae-wts">';
+  fams.forEach(fm=>{ const v=(w[fm.key]!=null?w[fm.key]:1);
+    h+='<div class="ae-wrow"><span class="ae-wlab">'+fm.label+'</span>'+
+       '<input type="range" min="0" max="2" step="0.1" value="'+v+'" data-aew="'+lens.key+'|'+fm.key+'">'+
+       '<span class="ae-wval">'+v.toFixed(1)+'</span></div>';
+  });
+  h+='<span class="ae-wreset" data-aewr="'+lens.key+'">reset weights</span></div>';
+  return h;
 }
 function renderAnaEntry(){
   const host=document.getElementById('ae-cols'); if(!host) return;
   if(!AE_FN.length){ host.innerHTML='<div class="ae-note">Embedding not available in this manifest.</div>'; return; }
+  if(AE_TARGET_TYP==null && byId[FOCUS]) AE_TARGET_TYP=byId[FOCUS].typology||null;
   host.innerHTML='';
+  const typs=[...new Set(Object.keys(AE_VEC).map(id=>(byId[id]||{}).typology).filter(Boolean))].sort();
   for(const lens of AE_LENSES){
     const res=aeAnalogues(lens,6);
     const col=document.createElement('div'); col.className='ae-lens';
-    const tl = lens.typFilter && byId[FOCUS] ? ' · '+((byId[FOCUS].typology)||'') : '';
+    let headRight='<span class="ae-lm" data-aem="'+lens.key+'">methods</span>';
+    if(lens.typFilter){
+      headRight='<select class="ae-typ" id="ae-typ-sel">'+typs.map(t=>'<option'+(t===AE_TARGET_TYP?' selected':'')+'>'+t+'</option>').join('')+'</select>'+headRight;
+    }
     let rows='';
     if(!res.length){ rows='<div class="ae-note">No analogues for this lens.</div>'; }
     else rows='<ul class="ae-list">'+res.map((r,i)=>{
-      const picked = COMPS.indexOf(r.id)>=0;
-      let sim = AE_METRIC==='cosine' ? Math.round(Math.max(0,r.val)*100)+'%' : r.val.toFixed(2);
+      const picked=COMPS.indexOf(r.id)>=0;
+      const sim=AE_METRIC==='cosine'?Math.round(Math.max(0,r.val)*100)+'%':r.val.toFixed(2);
       const nm=((byId[r.id]||{}).name||r.id).replace(/^\d+_/,'').replace(/_/g,' ');
       const tp=(byId[r.id]||{}).typology||'';
-      return '<li class="'+(picked?'picked':'')+'" data-add="'+r.id+'">'+
-        '<span class="ae-rk">'+(i+1)+'</span><span class="ae-sim">'+sim+'</span>'+
-        '<span class="ae-nm">'+nm+'</span><span class="ae-tp">'+tp+'</span>'+
-        '<span class="ae-plus">'+(picked?'\u2212':'+')+'</span></li>';
+      return '<li class="'+(picked?'picked':'')+'" data-add="'+r.id+'"><span class="ae-rk">'+(i+1)+'</span>'+
+        '<span class="ae-sim">'+sim+'</span><span class="ae-nm">'+nm+'</span>'+
+        '<span class="ae-tp">'+tp+'</span><span class="ae-plus">'+(picked?'\u2212':'+')+'</span></li>';
     }).join('')+'</ul>';
-    col.innerHTML='<div class="ae-lh"><div><div class="ae-lt">'+lens.title+tl+'</div>'+
-      '<div class="ae-lq">'+lens.q+'</div></div>'+
-      '<span class="ae-lm" data-aem="'+lens.key+'">methods</span></div>'+
-      rows+'<div class="ae-note">'+lens.note+'</div>';
+    col.innerHTML='<div class="ae-lh"><div><div class="ae-lt">'+lens.title+'</div>'+
+      '<div class="ae-lq">'+lens.q+'</div></div><div class="ae-lhr">'+headRight+'</div></div>'+
+      rows+_aeSliders(lens)+'<div class="ae-note">'+lens.note+'</div>';
     host.appendChild(col);
   }
   host.querySelectorAll('[data-add]').forEach(li=>li.addEventListener('click',()=>aeToggle(li.getAttribute('data-add'))));
   host.querySelectorAll('[data-aem]').forEach(el=>el.addEventListener('click',()=>aeMethod(el.getAttribute('data-aem'))));
+  host.querySelectorAll('[data-aew]').forEach(sl=>sl.addEventListener('input',e=>{
+    const [lk,fk]=e.target.getAttribute('data-aew').split('|');
+    if(!AE_WEIGHTS[lk])aeResetWeights(lk); AE_WEIGHTS[lk][fk]=+e.target.value; renderAnaEntry(); }));
+  host.querySelectorAll('[data-aewr]').forEach(b=>b.addEventListener('click',()=>{ aeResetWeights(b.getAttribute('data-aewr')); renderAnaEntry(); }));
+  const ts=document.getElementById('ae-typ-sel');
+  if(ts) ts.addEventListener('change',e=>{ AE_TARGET_TYP=e.target.value; renderAnaEntry(); });
 }
-function aeToggle(id){
-  if(id===FOCUS) return;
-  const i=COMPS.indexOf(id);
-  if(i>=0){ COMPS.splice(i,1); }
-  else { if(COMPS.length>=4) COMPS.shift(); COMPS.push(id); }
-  render();
-}
-function aeMethod(key){
-  const m=AE_METHOD[key]; if(!m) return;
-  const c=document.getElementById('ae-mcard');
-  c.innerHTML='<button class="x">×</button><h3>'+m.title+'</h3><div class="src">'+m.src+'</div>'+
-    '<p>'+m.body+'</p><p class="cav">'+m.cav+'</p>';
-  c.querySelector('.x').addEventListener('click',aeCloseMethod);
-  c.classList.add('show'); document.getElementById('ae-mback').classList.add('show');
-}
-function aeCloseMethod(){ document.getElementById('ae-mcard').classList.remove('show');
-  document.getElementById('ae-mback').classList.remove('show'); }
+function aeToggle(id){ if(id===FOCUS) return; const i=COMPS.indexOf(id);
+  if(i>=0) COMPS.splice(i,1); else { if(COMPS.length>=4) COMPS.shift(); COMPS.push(id); } render(); }
+function aeMethod(key){ const m=AE_METHOD[key]; if(!m) return; const c=document.getElementById('ae-mcard');
+  c.innerHTML='<button class="x">\u00d7</button><h3>'+m.title+'</h3><div class="src">'+m.src+'</div><p>'+m.body+'</p><p class="cav">'+m.cav+'</p>';
+  c.querySelector('.x').addEventListener('click',aeCloseMethod); c.classList.add('show'); document.getElementById('ae-mback').classList.add('show'); }
+function aeCloseMethod(){ document.getElementById('ae-mcard').classList.remove('show'); document.getElementById('ae-mback').classList.remove('show'); }
 function aeInit(m){
   AE_FN=(m.embedding&&m.embedding.feature_names)||[];
   AE_VEC={};
   (m.sads||[]).forEach(s=>{ const nz=s.features&&s.features.normalized;
     if(nz && !/drawn/i.test(s.sad_id)) AE_VEC[s.sad_id]=AE_FN.map(n=>(nz[n]!=null?nz[n]:0)); });
-  AE_LENSES.forEach(L=>{ L._cols=AE_FN.map((f,i)=>[f,i]).filter(x=>L.match(x[0])).map(x=>x[1]); });
+  AE_LENSES.forEach(L=>{
+    const fams=AE_FAMILIES[L.key];
+    L._cols=[]; L._colFam=[];
+    AE_FN.forEach((f,i)=>{ const fm=fams.find(x=>x.match(f)); if(fm){ L._cols.push(i); L._colFam.push(fm.key); } });
+    aeResetWeights(L.key);
+  });
+  AE_TARGET_TYP=(byId[FOCUS]||{}).typology||null;
   const mb=document.getElementById('ae-mback'); if(mb) mb.addEventListener('click',aeCloseMethod);
   document.querySelectorAll('#ae-metric button').forEach(b=>b.addEventListener('click',()=>{
     AE_METRIC=b.getAttribute('data-m');
