@@ -196,11 +196,28 @@ async function boot() {
   }
   if (ids.length < 2) { loading.textContent = `Only ${ids.length} district(s) carry embedding vectors — run M8, then rebuild the manifest.`; return; }
 
+  // ---- metric-family field: store full embedding data for live re-projection ----
+  S.embIds = ids; S.embVectors = vectors; S.embFnames = fnames; S.family = 'all';
+  S.FAMILIES = {
+    all:          { label: 'All metrics',       match: f => true },
+    morphometric: { label: 'Morphometric',      match: f => f.indexOf('morph_') === 0 },
+    program:      { label: 'Program mix',        match: f => f.indexOf('prog_') === 0 },
+    livework:     { label: 'Live / Work / Play', match: f => ['prog_pct_residential','prog_pct_office','prog_pct_sport','prog_pct_retail_food_entertainment','prog_pct_hotel'].indexOf(f) >= 0 },
+    anchor:       { label: 'Anchor',             match: f => f.indexOf('anchor_') === 0 },
+    intensity:    { label: 'Intensity',          match: f => ['morph_density_per_km2','morph_coverage','anchor_count_inside'].indexOf(f) >= 0 },
+  };
+  // which families have >= 2 present feature columns
+  S.familyCols = {};
+  for (const key in S.FAMILIES) {
+    const cols = []; fnames.forEach((f, i) => { if (S.FAMILIES[key].match(f)) cols.push(i); });
+    if (cols.length >= 2 || key === 'all') S.familyCols[key] = cols.length ? cols : fnames.map((_, i) => i);
+  }
   const { coords, varExplained } = pca3(ids, vectors);
   let maxAbs = 0; for (const id of ids) for (const c of coords[id]) maxAbs = Math.max(maxAbs, Math.abs(c));
   const k = maxAbs > 0 ? 40 / maxAbs : 1;
   ids.forEach(id => { S.basePos[id] = coords[id].map(c => c * k); });
   S.fieldSads = ids.map(id => ({ id }));
+  S.targetPos = {}; S.fromPos = {}; S.anim = null;
   S.visible = new Set(ids.filter(id => isConfirmed(S.idToRec[id])));
   if (S.visible.size === 0) S.visible = new Set(ids);   // never start empty
 
@@ -322,6 +339,12 @@ function buildConstellation() {
   S.constellation = new THREE.LineSegments(g, new THREE.LineBasicMaterial({
     color: 0x8aa0c0, transparent: true, opacity: 0.16,
     blending: THREE.AdditiveBlending, depthWrite: false }));
+  // capture the id-pairs so links can follow the meshes during family re-projection
+  S.linkPairs = [];
+  for (const d of S.fieldSads) {
+    const a = S.basePos[d.id]; if (!a) continue;
+    for (const nb of neighbors(d.id, 2)) { if (S.basePos[nb.id]) S.linkPairs.push([d.id, nb.id]); }
+  }
   S.scene.add(S.constellation);
 }
 
@@ -578,6 +601,19 @@ function wireUI() {
 
   const spread = document.getElementById('sl-spread'), size = document.getElementById('sl-size');
   spread.addEventListener('input', () => { S.spread = +spread.value; applySpread(); });
+  const famSel = document.getElementById('sel-family');
+  if (famSel) {
+    // populate with available families only
+    famSel.innerHTML = '';
+    for (const key in S.FAMILIES) {
+      if (!S.familyCols[key]) continue;
+      const o = document.createElement('option'); o.value = key; o.textContent = S.FAMILIES[key].label;
+      famSel.appendChild(o);
+    }
+    famSel.value = S.family;
+    famSel.addEventListener('change', () => reprojectFamily(famSel.value));
+  }
+
   size.addEventListener('input', () => { S.pointSize = +size.value; refreshVisuals(); });
 
   initSplitter();
@@ -607,8 +643,47 @@ function onResize() {
 }
 
 // ── loop ──────────────────────────────────────────────────────────────────────
+function refreshLinks() {
+  if (!S.constellation || !S.linkPairs) return;
+  const segs = [];
+  for (const [ai, bi] of S.linkPairs) {
+    const a = S.basePos[ai], b = S.basePos[bi]; if (!a || !b) continue;
+    const s = S.spread; segs.push(a[0]*s, a[1]*s, a[2]*s, b[0]*s, b[1]*s, b[2]*s);
+  }
+  const g = S.constellation.geometry;
+  g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(segs), 3));
+  g.attributes.position.needsUpdate = true;
+}
+function reprojectFamily(key) {
+  if (!S.familyCols || !S.familyCols[key]) return;
+  S.family = key;
+  const cols = S.familyCols[key];
+  const sub = S.embVectors.map(v => cols.map(i => v[i]));
+  const { coords, varExplained } = pca3(S.embIds, sub);
+  let maxAbs = 0; for (const id of S.embIds) for (const c of coords[id]) maxAbs = Math.max(maxAbs, Math.abs(c));
+  const k = maxAbs > 0 ? 40 / maxAbs : 1;
+  S.fromPos = {}; S.targetPos = {};
+  for (const id of S.embIds) { S.fromPos[id] = (S.basePos[id] || [0,0,0]).slice(); S.targetPos[id] = coords[id].map(c => c * k); }
+  S.anim = { t0: performance.now(), dur: 850 };
+  const pv = document.getElementById('pca-var');
+  if (pv) pv.textContent = varExplained.slice(0, 3).map((v, i) => `PC${i + 1} ${(v * 100).toFixed(1)}%`).join('   ');
+}
 function animate() {
   requestAnimationFrame(animate);
+  // ---- metric-family re-projection glide ----
+  if (S.anim) {
+    const a = S.anim; let u = (performance.now() - a.t0) / a.dur;
+    if (u >= 1) { u = 1; }
+    const e = u < 0.5 ? 4*u*u*u : 1 - Math.pow(-2*u+2, 3) / 2;  // smoothstep-ish ease
+    for (const id of S.embIds) {
+      const f = S.fromPos[id], tg = S.targetPos[id]; if (!f || !tg) continue;
+      S.basePos[id] = [f[0]+(tg[0]-f[0])*e, f[1]+(tg[1]-f[1])*e, f[2]+(tg[2]-f[2])*e];
+    }
+    for (const m of S.meshes) { const p = S.basePos[m.userData.id]; if (p) m.position.set(p[0]*S.spread, p[1]*S.spread, p[2]*S.spread); }
+    refreshLinks();
+    if (u >= 1) S.anim = null;
+  }
+
   // staggered intro scale-in
   const t = performance.now() - S.t0;
   let introDone = true;
