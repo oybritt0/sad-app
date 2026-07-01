@@ -314,6 +314,141 @@ def compute_sad_interior_demographics(census_bgs: gpd.GeoDataFrame,
     }
 
 
+# ─── Phase 2 extractors: NSI occupancy, demographics/economic (time-series), connectivity ───
+import math as _math
+import re as _re2
+
+def _nsi_group(occtype):
+    if not occtype: return 'other'
+    _m = _re2.match(r'^([A-Z]+)(\d+)', str(occtype))
+    if not _m: return 'other'
+    fam, num = _m.group(1), int(_m.group(2))
+    if fam == 'RES':
+        return 'hotel/institutional' if num == 4 else 'residential'
+    if fam == 'COM':
+        if num == 1: return 'retail'
+        if num == 4: return 'office'
+        if num in (8, 9): return 'entertainment'
+        if num in (2, 3): return 'industrial/service'
+        return 'civic/medical'
+    if fam in ('IND', 'AGR'): return 'industrial/service'
+    if fam in ('REL', 'EDU', 'GOV'): return 'civic/medical'
+    return 'other'
+
+def _program_group(props):
+    dom = str(props.get('dominant_program_inside') or '').strip().lower()
+    prg = str(props.get('programs_inside') or '').strip().lower()
+    if dom == 'parking' or prg == 'parking':
+        return 'parking'
+    return _nsi_group(props.get('occtype'))
+
+_OCC_CATS = ['residential', 'hotel/institutional', 'retail', 'office', 'entertainment',
+             'industrial/service', 'civic/medical', 'parking', 'other']
+def _occ_key(c): return 'progocc_pct_' + c.replace('/', '_').replace(' ', '_')
+
+def _shannon(vals):
+    tot = sum(v for v in vals if v)
+    if tot <= 0: return 0.0
+    h = 0.0
+    for v in vals:
+        if v and v > 0:
+            pp = v / tot; h -= pp * _math.log(pp)
+    return h
+
+def extract_building_occupancy_features(buildings_inside):
+    """Area-weighted NSI-occupancy program mix over SAD-interior buildings.
+    Program = NSI occtype for all buildings; POI tag used only to identify parking."""
+    area_by = {c: 0.0 for c in _OCC_CATS}
+    # buildings_inside is a GeoDataFrame; iterate rows
+    for _, row in buildings_inside.iterrows():
+        props = row.to_dict()
+        area = props.get('area_m2')
+        if area is None:
+            try: area = float(row.geometry.area)
+            except Exception: area = None
+        if area is None or area <= 0: continue
+        area_by[_program_group(props)] += float(area)
+    total = sum(area_by.values())
+    feats = {}
+    for c in _OCC_CATS:
+        feats[_occ_key(c)] = (100.0 * area_by[c] / total) if total > 0 else 0.0
+    feats['progocc_diversity'] = _shannon(list(area_by.values()))
+    return feats
+
+def _slope(years, vals):
+    pts = [(y, v) for y, v in zip(years, vals)
+           if v is not None and not (isinstance(v, float) and _math.isnan(v))]
+    if len(pts) < 2: return 0.0
+    n = len(pts); sx = sum(a for a, _ in pts); sy = sum(b for _, b in pts)
+    sxx = sum(a * a for a, _ in pts); sxy = sum(a * b for a, b in pts)
+    den = n * sxx - sx * sx
+    return ((n * sxy - sx * sy) / den) if den else 0.0
+
+def extract_demographic_economic_features(derived, sad_area_km2):
+    """Level (latest year) + trend (2013-2023 slope) from census_timeseries.json summaries."""
+    fp = derived / 'census_timeseries.json'
+    if not fp.exists(): return {}
+    try:
+        ts = json.loads(fp.read_text())
+    except Exception:
+        return {}
+    summ = ts.get('summaries', {})
+    years = sorted(int(y) for y in summ.keys())
+    if not years: return {}
+    area = sad_area_km2 if sad_area_km2 and sad_area_km2 > 0 else 1.0
+    L = summ[str(years[-1])]
+    def ser(key): return [summ[str(y)].get(key) for y in years]
+    f = {}
+    pop = L.get('estimated_population')
+    f['demo_pop_density'] = (pop / area) if pop else 0.0
+    f['demo_median_age'] = L.get('median_age_pop_weighted') or 0.0
+    f['demo_pct_owner_occupied'] = L.get('pct_owner_occupied') or 0.0
+    f['econ_median_income'] = L.get('median_household_income_pop_weighted') or 0.0
+    f['econ_median_home_value'] = L.get('median_home_value_pop_weighted') or 0.0
+    f['econ_median_gross_rent'] = (L.get('median_gross_rent_pop_weighted')
+                                   or L.get('median_gross_rent') or 0.0)
+    f['demo_pop_trend'] = _slope(years, ser('estimated_population'))
+    f['demo_ownership_trend'] = _slope(years, ser('pct_owner_occupied'))
+    f['econ_income_trend'] = _slope(years, ser('median_household_income_pop_weighted'))
+    f['econ_home_value_trend'] = _slope(years, ser('median_home_value_pop_weighted'))
+    return f
+
+def extract_connectivity_features(derived, sad_area_km2):
+    """Connectivity composite from per-district summary JSONs, area-normalized."""
+    def _load(rel):
+        fp = derived / rel
+        try: return json.loads(fp.read_text())
+        except Exception: return {}
+    ts = _load('transit/transit_summary.json')
+    tr = _load('transit/transit_routes_summary.json')
+    los = _load('transit_los/transit_los_summary.json')
+    wk = _load('walkshed/walkshed_summary.json')
+    sc = _load('street_centrality_summary.json')
+    area = sad_area_km2 if sad_area_km2 and sad_area_km2 > 0 else 1.0
+    f = {}
+    st = ts.get('total_stations')
+    f['conn_stations_per_km2'] = (st / area) if st else 0.0
+    f['conn_routes_serving'] = float(tr.get('routes_serving_sad') or los.get('routes_serving') or 0.0)
+    f['conn_trips_per_day'] = float(los.get('trips_per_day') or 0.0)
+    hw = los.get('median_route_headway_min')
+    f['conn_headway_inv'] = (60.0 / hw) if hw and hw > 0 else 0.0
+    f['conn_span_hours'] = float(los.get('span_hours') or 0.0)
+    f['conn_stops_in_buffer'] = float(los.get('stops_in_buffer') or 0.0)
+    si, sb = los.get('stops_inside'), los.get('stops_in_buffer')
+    f['conn_stops_inside_ratio'] = (si / sb) if si and sb else 0.0
+    wa = 0.0
+    for w in (wk.get('walksheds') or []):
+        for k in ('area_sqft', 'area_m2', 'area_acres'):
+            if w.get(k):
+                wa = max(wa, float(w[k])); break
+    f['conn_walkshed_area'] = wa
+    f['conn_street_mean_centrality'] = float(sc.get('mean_centrality_nonzero')
+                                             or sc.get('mean_centrality') or 0.0)
+    fc = sc.get('feature_count')
+    f['conn_street_density'] = (fc / area) if fc else 0.0
+    return f
+
+
 def gather_sad_features(data_dir: Path, sad_id: str,
                           include_demographics: bool = True) -> dict:
     """Compute the full feature vector for one SAD, all SAD-interior."""
@@ -332,10 +467,16 @@ def gather_sad_features(data_dir: Path, sad_id: str,
         sad_boundary = sad_gdf.unary_union
     
     # Load buildings (full canvas) and project to metric CRS
-    buildings_path = derived / 'buildings_enriched.gpkg'
+    # Phase 2: read .geojson (the .gpkg is no longer produced; only .gpkg.bak remains)
+    buildings_path = derived / 'buildings_enriched.geojson'
     if not buildings_path.exists():
-        raise FileNotFoundError(f"Missing {buildings_path}")
-    buildings_full = gpd.read_file(buildings_path, layer='buildings')
+        _gpkg = derived / 'buildings_enriched.gpkg'
+        if _gpkg.exists():
+            buildings_full = gpd.read_file(_gpkg, layer='buildings')
+        else:
+            raise FileNotFoundError(f"Missing {buildings_path}")
+    else:
+        buildings_full = gpd.read_file(buildings_path)
     metric_crs = buildings_full.estimate_utm_crs()
     buildings_full = buildings_full.to_crs(metric_crs)
     
@@ -350,6 +491,12 @@ def gather_sad_features(data_dir: Path, sad_id: str,
     
     # ─── Morphology features ─────────────────────────────────────────
     morph_feats = extract_morphology_features(buildings_inside, sad_area_m2)
+
+    # ─── Phase 2: NSI occupancy, demographics/economic, connectivity ───
+    occ_feats = extract_building_occupancy_features(buildings_inside)
+    _area_km2 = sad_area_m2 / 1e6
+    demo_econ_feats = extract_demographic_economic_features(derived, _area_km2)
+    conn_feats = extract_connectivity_features(derived, _area_km2)
     
     # ─── Program features (from interior_exterior_signature) ─────────
     iex_path = derived / 'interior_exterior_signature.json'
@@ -413,7 +560,7 @@ def gather_sad_features(data_dir: Path, sad_id: str,
         'sad_area_km2': sad_area_m2 / 1e6,
         'buildings_inside_count': len(buildings_inside),
         'features': {**morph_feats, **program_feats, **anchor_feats,
-                      **demo_feats},
+                      **demo_feats, **occ_feats, **demo_econ_feats, **conn_feats},
     }
 
 
@@ -447,6 +594,10 @@ def normalize_features(df_raw: pd.DataFrame) -> pd.DataFrame:
             normalized[c] = (df_feat[c] - mean[c]) / std[c]
         else:
             normalized[c] = 0.0
+    # Phase 2: districts missing census/transit features have NaN cells; fill with 0.0
+    # (the mean in z-space) so they sit neutrally on those axes rather than breaking
+    # cosine distances / in-browser PCA.
+    normalized = normalized.fillna(0.0)
     return normalized
 
 
@@ -795,8 +946,8 @@ def main():
                   f"{sd['sad_area_km2']:.2f} km², "
                   f"{len(sd['features'])} features")
         except Exception as e:
-            print(f"    ERROR: {e}")
-            raise
+            print(f"    ERROR: {e} -- SKIPPING this district")
+            continue
     
     if len(sads_data) < 2:
         raise SystemExit(f"Need >=2 SADs, got {len(sads_data)}")
