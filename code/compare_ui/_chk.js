@@ -697,6 +697,10 @@ const AE_FAMILIES={
 let AE_WEIGHTS={}; // {lensKey:{familyKey:weight}}
 function aeResetWeights(lk){ AE_WEIGHTS[lk]={}; AE_FAMILIES[lk].forEach(fm=>AE_WEIGHTS[lk][fm.key]=1); }
 const AE_METHOD={
+  weights:{title:'Weighting the measures',
+    src:'Per-lens family weights \u00b7 applied to the z-scored embedding',
+    body:'Each lens combines several families of measures. The sliders set how much each family counts toward that lens\u2019s similarity ranking. Every measure is standardised across the corpus first, so families are comparable; the weight then scales a family\u2019s contribution to the distance. A weight of 1 is the default (equal footing), 2 doubles a family\u2019s emphasis, and 0 removes it from the comparison entirely. The ranking updates live as you drag. This re-weights the same underlying data \u2014 it does not add or change any measurements.',
+    cav:'Weighting changes which districts rank as closest, not the data behind them. \u201cReset weights\u201d returns every family to equal footing.'},
   current:{title:'Current condition \u2014 the site as it exists',
     src:'Module 8 embedding \u00b7 connectivity + built form + demographics + economics',
     body:'Ranks districts by similarity to the study district across connectivity, built form, and present-day demographics and economics, each standardised across the corpus. Use the weight sliders to emphasise the families that matter for this project \u2014 the ranking updates live. No typology filter.',
@@ -734,13 +738,14 @@ function aeAnalogues(lens,k){
 }
 function _aeSliders(lens){
   const fams=AE_FAMILIES[lens.key]||[]; const w=AE_WEIGHTS[lens.key]||{};
-  let h='<div class="ae-wts">';
+  let h='<div class="ae-wts"><div class="ae-wcap">Weight the measures in this lens</div>';
   fams.forEach(fm=>{ const v=(w[fm.key]!=null?w[fm.key]:1);
     h+='<div class="ae-wrow"><span class="ae-wlab">'+fm.label+'</span>'+
        '<input type="range" min="0" max="2" step="0.1" value="'+v+'" data-aew="'+lens.key+'|'+fm.key+'">'+
        '<span class="ae-wval">'+v.toFixed(1)+'</span></div>';
   });
-  h+='<span class="ae-wreset" data-aewr="'+lens.key+'">reset weights</span></div>';
+  h+='<span class="ae-wreset" data-aewr="'+lens.key+'">reset weights</span>'+
+       '<span class="ae-whelp" data-aem="weights">how weighting works</span></div>';
   return h;
 }
 function renderAnaEntry(){
