@@ -606,9 +606,7 @@ function manifestToStudio(m){
 let byId={};
 
 const COLORS=['#ef3006','#2f8f80','#5688c4','#d2a23f','#8f78c9'];
-const PROGOCC_C={residential:'#5fae7e',hotel_institutional:'#c98a3a',retail:'#e2674f',office:'#5688c4',entertainment:'#d2a23f',industrial_service:'#8a7a6a',civic_medical:'#7c9c8f',parking:'#8a8a8a',other:'#d6cebf'};
-const PROGOCC_LABEL={residential:'residential',hotel_institutional:'hotel / institutional',retail:'retail',office:'office',entertainment:'entertainment',industrial_service:'industrial / service',civic_medical:'civic / medical',parking:'parking',other:'other'};
-const AMEN_C={retail_food_entertainment:'#e2674f',office:'#5688c4',sport:'#d2a23f',parking:'#8a8a8a',hotel:'#c98a3a',residential:'#5fae7e',open_space:'#7cb342',other:'#d6cebf'};
+const AMEN_C={retail_food_entertainment:'#E69F00',office:'#D55E00',sport:'#CC79A7',parking:'#009E73',hotel:'#56B4E9',residential:'#0072B2',open_space:'#6aa84f',other:'#999999'};
 const METRICS=[['income','Median income','usd',r=>r.cen.income],['pop','Population','int',r=>r.cen.pop],['age','Median age','age',r=>r.cen.age],
   ['renter','Renter-occupied','pct',r=>r.cen.renter],['bach',"Bachelor's or higher",'pct',r=>r.cen.bach],['pois','POIs','int',r=>r.pois],
   ['transit','Transit stations','int',r=>r.transit],['walk','Walkshed acres','int',r=>r.walk],['nodes','Street nodes','int',r=>r.nodes]];
@@ -701,22 +699,30 @@ function cSim(){
   return {title:'Closeness to '+byId[FOCUS].name,svg:svg(W,H,'Closeness to '+byId[FOCUS].name,'morphology + demographics',inner)};
 }
 function cProgram(){
-  const cats=Object.keys(PROGOCC_C),s=sel();const W=800,top=74,rowH=50,pad=20,bw=W-2*pad;const H=top+s.length*rowH+78;let inner='';
+  const cats=Object.keys(AMEN_C),s=sel();const W=800,top=74,rowH=50,pad=20,bw=W-2*pad;const H=top+s.length*rowH+78;let inner='';
+  const mode=PROGMODE;
   s.forEach((id,i)=>{const y=top+i*rowH,r=byId[id];
-    const raw=r._raw||{};
-    let shares={},sum=0,avail=false;
-    cats.forEach(c=>{const v=+raw['progocc_pct_'+c]; if(isFinite(v)){shares[c]=v;sum+=v;avail=true;}});
-    // values are percent (0-100); normalise to fraction of the present sum
-    if(avail && sum>0){ cats.forEach(c=>{shares[c]=(shares[c]||0)/sum;}); }
-    const flag=avail?(Math.round((shares.parking||0)*100)+'% parking'):'no occupancy data';
+    let shares={},flag='',avail=true;
+    if(mode==='area'){
+      // prefer program_land (parking-complete); fall back to program_real (floor area)
+      const pl=r.program_land&&r.program_land.shares_sqft, plOk=pl&&!r.program_land.low_confidence;
+      const pr=r.program_real&&r.program_real.shares_sqft;
+      if(plOk){ shares=pl; flag=''; }
+      else if(pr){ shares=pr; const cov=r.program_real.coverage&&r.program_real.coverage.occ_coverage;
+        flag=(r.program_real.low_confidence?'low confidence':(cov!=null?Math.round(cov*100)+'% coverage':'')); }
+      else { avail=false; flag='no occupancy data'; }
+    } else {
+      const am=r.amenity||{},tot=Object.values(am).reduce((a,b)=>a+(+b||0),0)||1;
+      cats.forEach(c=>shares[c]=(+am[c]||0)/tot); flag=(r.pois||0)+' POIs';
+    }
     inner+='<circle cx="'+(pad+5)+'" cy="'+(y+9)+'" r="5" fill="'+colorOf(id)+'"/><text x="'+(pad+16)+'" y="'+(y+13)+'" class="lab" style="font-size:12px;fill:#000000">'+esc(r.name)+'</text>';
     inner+='<text x="'+(W-pad)+'" y="'+(y+13)+'" text-anchor="end" class="mono">'+flag+'</text>';
-    if(avail){let cx=pad;cats.forEach(c=>{const v=+shares[c]||0;if(v<=0)return;const w=v*bw;inner+='<rect x="'+cx.toFixed(1)+'" y="'+(y+20)+'" width="'+w.toFixed(1)+'" height="18" fill="'+PROGOCC_C[c]+'"><title>'+PROGOCC_LABEL[c]+' '+Math.round(v*100)+'%</title></rect>';cx+=w;});}
+    if(avail){let cx=pad;cats.forEach(c=>{const v=+shares[c]||0;if(v<=0)return;const w=v*bw;inner+='<rect x="'+cx.toFixed(1)+'" y="'+(y+20)+'" width="'+w.toFixed(1)+'" height="18" fill="'+AMEN_C[c]+'"><title>'+c.replace(/_/g,' ')+' '+Math.round(v*100)+'%</title></rect>';cx+=w;});}
     else { inner+='<rect x="'+pad+'" y="'+(y+20)+'" width="'+bw+'" height="18" fill="#f2f2f2"/>'; }
     inner+='<rect x="'+pad+'" y="'+(y+20)+'" width="'+bw+'" height="18" fill="none" stroke="#e0e0e0" rx="3"/>';});
-  let ky=top+s.length*rowH+12,kx=pad;cats.forEach(c=>{inner+='<rect x="'+kx+'" y="'+ky+'" width="9" height="9" rx="2" fill="'+PROGOCC_C[c]+'"/><text x="'+(kx+13)+'" y="'+(ky+8)+'" class="axlab">'+PROGOCC_LABEL[c]+'</text>';kx+=18+PROGOCC_LABEL[c].length*5.6+16;if(kx>W-140){kx=pad;ky+=18;}});
-  const sub='building program by NSI occupancy, area-weighted \u00b7 parking split via POI \u00b7 sport-blind';
-  return {title:'Program mix \u2014 occupancy',svg:svg(W,Math.max(H,ky+20),'Program mix \u2014 occupancy',sub,inner)};
+  let ky=top+s.length*rowH+12,kx=pad;cats.forEach(c=>{inner+='<rect x="'+kx+'" y="'+ky+'" width="9" height="9" rx="2" fill="'+AMEN_C[c]+'"/><text x="'+(kx+13)+'" y="'+(ky+8)+'" class="axlab">'+c.replace(/_/g,' ')+'</text>';kx+=18+c.length*5.6+16;if(kx>W-120){kx=pad;ky+=18;}});
+  const sub=mode==='area'?'occupancy incl. surface parking - NSI/HAZUS + OSM (sport-blind)':'POI counts - Overture/OSM (housing-blind)';
+  return {title:'Program mix',svg:svg(W,Math.max(H,ky+20),'Program mix',sub,inner)};
 }
 function cScatter(){
   const W=800,H=500,m={l:64,r:28,t:78,b:52},gx=MGET[SCAT.x],gy=MGET[SCAT.y];
@@ -1179,7 +1185,7 @@ function render(){
     let ax='';
     if(key==='scatter')ax='<div class="axsel"><span class="k">Y</span>'+metricSelect('y',SCAT.y)+'<span class="k">X</span>'+metricSelect('x',SCAT.x)+'</div>';
     else if(key==='ranking')ax='<div class="axsel"><span class="k">Metric</span>'+metricSelect('rank',RANKM)+'</div>';
-    else if(key==='program')ax='<span class="axlab" style="color:#8a8a8a">NSI occupancy, area-weighted</span>';
+    else if(key==='program')ax='<div class="axsel"><span class="k">Program</span><select data-prog="1"><option value="area">Occupancy (area)</option><option value="poi">POIs (count)</option></select></div>';
     else if(key==='analogues')ax='<div class="axsel"><span class="k">View</span><select data-anmode="1"><option value="focus"'+(ANMODE==='focus'?' selected':'')+'>Closest to focus</option><option value="each"'+(ANMODE==='each'?' selected':'')+'>Each district</option></select></div>';
       else if(key==='fingerprint')ax='<div class="axsel"><span class="k">View</span><select data-fpmode="1"><option value="grid"'+(FPMODE==='grid'?' selected':'')+'>Side by side</option><option value="overlay"'+(FPMODE==='overlay'?' selected':'')+'>Overlay</option></select></div>';
       else if(key==='maps')ax='<div class="axsel">'+'<label class="occchk"><input type="checkbox" data-sat="1"'+(MAPSAT?' checked':'')+'>SATELLITE</label>'+'<input type="range" data-satop="1" min="0" max="1" step="0.05" value="'+MAPSAT_OP+'" style="width:70px;vertical-align:middle" title="satellite opacity">'+'<label class="occchk" style="margin-left:14px"><input type="checkbox" data-streets="1"'+(MAPSTREETS?' checked':'')+'>STREETS</label>'+'<label class="occchk"><input type="checkbox" data-parks="1"'+(MAPPARKS?' checked':'')+'>PARKS</label>'+'<label class="occchk"><input type="checkbox" data-boundary="1"'+(MAPBOUNDARY?' checked':'')+'>SAD BOUNDARY</label>'
