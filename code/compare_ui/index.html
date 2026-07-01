@@ -43,6 +43,7 @@
         <button id="btn-rotate" class="btn">Orbit</button>
         <button id="btn-labels" class="btn">Labels</button>
         <button id="btn-conn" class="btn">Links</button>
+        <button id="btn-resetview" class="btn">Reset view</button>
       </div>
       <div class="tgroup">
         <label class="slider" style="gap:6px">Field
@@ -74,8 +75,9 @@
       </section>
       <section>
         <h2>Projection</h2>
-        <p class="note">A PCA-3D projection of the morphometric feature vector â€” for spatial navigation.</p>
+        <p class="note" id="family-desc">All 20 measures — morphometric, program, and anchor — combined.</p>
         <div class="proj-var mono" id="pca-var">â€”</div>
+        <a href="#" id="family-method" class="note" style="color:#7d93b3;text-decoration:underline">full method →</a>
         <p class="note faint">Similarity (“Nearest districts”) is measured in the full feature space, not from on-screen distance.</p>
       </section>
       <section class="rail-foot">

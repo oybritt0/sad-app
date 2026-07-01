@@ -224,8 +224,7 @@ async function boot() {
   S.axisStats = ROSE_AXES.map(([, , g]) => S.fieldSads.map(d => Number(g(S.idToRec[d.id]))).filter(x => isFinite(x)).sort((a, b) => a - b));
   S.liveAxes = ROSE_AXES.map((_, i) => i).filter(i => S.axisStats[i].length > 0);
 
-  document.getElementById('pca-var').textContent =
-    varExplained.slice(0, 3).map((v, i) => `PC${i + 1} ${(v * 100).toFixed(1)}%`).join('   ');
+  document.getElementById('pca-var').textContent = fmtVar(varExplained);
   document.getElementById('field-count').textContent = `${ids.length} districts`;
   loading.style.display = 'none';
 
@@ -267,7 +266,19 @@ function initThree() {
   S.controls = new OrbitControls(S.camera, S.renderer.domElement);
   S.controls.enableDamping = true; S.controls.dampingFactor = 0.08;
   S.controls.autoRotate = true; S.controls.autoRotateSpeed = 0.5;
-  S.controls.minDistance = 20; S.controls.maxDistance = 400;
+  S.controls.minDistance = 40; S.controls.maxDistance = 200; S.controls.zoomSpeed = 0.35;
+  // CUSTOM_WHEEL_ZOOM: take over the wheel for fine, uniform dolly steps
+  S.controls.enableZoom = false;
+  S.renderer.domElement.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const dir = Math.sign(e.deltaY);
+    const tgt = S.controls.target, cam = S.camera;
+    const offset = cam.position.clone().sub(tgt);
+    let dist = offset.length();
+    dist = Math.min(200, Math.max(40, dist * (1 + dir * 0.06)));
+    offset.setLength(dist);
+    cam.position.copy(tgt).add(offset);
+  }, { passive: false });
 
   S.scene.add(new THREE.AmbientLight(0xffffff, 0.9));
   const key = new THREE.DirectionalLight(0xffffff, 0.5); key.position.set(1, 1.4, 0.8); S.scene.add(key);
@@ -612,7 +623,12 @@ function wireUI() {
     }
     famSel.value = S.family;
     famSel.addEventListener('change', () => reprojectFamily(famSel.value));
+    updateFamilyCaption(S.family);
   }
+  const rv = document.getElementById('btn-resetview');
+  if (rv) rv.addEventListener('click', () => {
+    S.camera.position.set(72, 46, 96); S.controls.target.set(0, 0, 0); S.controls.update();
+  });
 
   size.addEventListener('input', () => { S.pointSize = +size.value; refreshVisuals(); });
 
@@ -654,6 +670,38 @@ function refreshLinks() {
   g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(segs), 3));
   g.attributes.position.needsUpdate = true;
 }
+const FAMILY_INFO = {
+  all: { title: 'All metrics \u2014 full morphometric + program + anchor space',
+    src: 'Module 8 embedding \u00b7 20 features \u00b7 in-browser PCA',
+    body: 'Projects every district into 3D using all 20 features together: 8 morphometric (building form), 9 program-mix, and 3 anchor-geometry measures. Each feature is z-scored across the corpus, then reduced to three principal components by in-browser PCA. Position encodes overall similarity across all measured dimensions at once. Sources: Overture/OSM building footprints, classified POIs (rod_places), anchor geometry.',
+    cap: 'All 20 measures \u2014 morphometric, program, and anchor \u2014 combined.' },
+  morphometric: { title: 'Morphometric profile \u2014 built-form structure',
+    src: 'Overture/OSM building footprints \u00b7 Module 8 \u00b7 8 features',
+    body: 'Projects districts on the 8 morphometric features only: building density per km\u00b2, ground coverage, median footprint area, area spread (IQR) and skew, mean compactness, orientation coherence, and building-cluster diversity. These describe the physical grain of the fabric independent of use. Z-scored, then PCA to 3D. This is a morphometric profile in the Conzen/Caniggia/Moudon tradition \u2014 measured form, not a learned latent space.',
+    cap: 'Building form only: density, coverage, size, compactness, orientation.' },
+  program: { title: 'Program mix \u2014 distribution of uses',
+    src: 'Classified POIs (rod_places / Overture) inside the SAD boundary \u00b7 Module 8 \u00b7 9 features',
+    body: 'Projects districts on 9 program measures: the share of points of interest in each Rossetti category \u2014 sport, residential, hotel, retail/food/entertainment, office, parking, open space, and other \u2014 counted inside the SAD boundary, plus program diversity (Shannon entropy of the mix). This is POI-count-weighted from Overture/rod_places; it reflects the mix of businesses and amenities, not building floor area or occupancy. Z-scored, PCA to 3D. A building-occupancy signal from NSI is planned as a parallel measure.',
+    cap: 'Mix of POIs by category (Overture), counted inside the boundary.' },
+  livework: { title: 'Live / Work / Play \u2014 the daily-rhythm reading',
+    src: 'Program signature, regrouped \u00b7 5 measures',
+    body: 'A reframing of the POI program mix around when a district is used: residential POI share (LIVE), office POI share (WORK), and sport + retail/food/entertainment + hotel POI shares (PLAY). Projects on these 5 POI-count measures to show where each district sits in the balance between living, working, and leisure. Z-scored, PCA to 3D. This is an interpretive lens over the Overture POI program signature, not a separate measurement.',
+    cap: 'Residential (live) vs office (work) vs sport/retail/hotel (play).' },
+  anchor: { title: 'Anchor \u2014 the venue\u2019s relationship to its district',
+    src: 'Anchor footprint geometry \u00b7 Module 8 \u00b7 3 features',
+    body: 'Projects on 3 anchor-geometry measures: number of anchor structures inside the SAD boundary, the largest anchor\u2019s footprint as a share of total building area, and the size concentration among the top anchors. Describes whether a district is dominated by one mega-venue or structured around several. With only 3 features the projection is close to the raw three axes.',
+    cap: 'One mega-venue or several? Anchor count, dominance, concentration.' },
+  intensity: { title: 'Intensity \u2014 how densely built and activity-packed',
+    src: 'Building footprints + anchor geometry \u00b7 Module 8 \u00b7 3 features',
+    body: 'A cross-cutting family combining building density per km\u00b2, ground coverage, and anchor count inside the boundary \u2014 how much is packed into the district. Z-scored, PCA to 3D. With 3 features the projection approximates the raw axes.',
+    cap: 'How much is packed in: density, coverage, anchor count.' },
+};
+const FAMILY_NOTE = ' The faint links are full-dimensional nearest neighbours; switching family re-forms the layout while those links persist.';
+function fmtVar(varExplained) {
+  const p = varExplained.slice(0, 3).map(v => Math.round(v * 100));
+  const total = p.reduce((a, b) => a + b, 0);
+  return `3D view captures ~${total}% of the variation (axes ${p[0]}% / ${p[1]}% / ${p[2]}%)`;
+}
 function reprojectFamily(key) {
   if (!S.familyCols || !S.familyCols[key]) return;
   S.family = key;
@@ -666,7 +714,18 @@ function reprojectFamily(key) {
   for (const id of S.embIds) { S.fromPos[id] = (S.basePos[id] || [0,0,0]).slice(); S.targetPos[id] = coords[id].map(c => c * k); }
   S.anim = { t0: performance.now(), dur: 850 };
   const pv = document.getElementById('pca-var');
-  if (pv) pv.textContent = varExplained.slice(0, 3).map((v, i) => `PC${i + 1} ${(v * 100).toFixed(1)}%`).join('   ');
+  if (pv) pv.textContent = fmtVar(varExplained);
+  updateFamilyCaption(key);
+}
+function updateFamilyCaption(key) {
+  const info = FAMILY_INFO[key];
+  const desc = document.getElementById('family-desc');
+  if (desc && info) desc.textContent = info.cap;
+  const lnk = document.getElementById('family-method');
+  if (lnk && info) {
+    lnk.style.display = '';
+    lnk.onclick = e => { e.preventDefault(); openInfo('family_' + key); };
+  }
 }
 function animate() {
   requestAnimationFrame(animate);
@@ -732,6 +791,10 @@ function initInfoUI() {
   const card = document.createElement('div'); card.id = 'm-card'; card.className = 'm-card';
   const tip = document.createElement('div'); tip.id = 'm-tip'; tip.className = 'm-tip';
   document.body.append(back, card, tip);
+  // register family method entries so openInfo('family_<key>') works
+  if (typeof INFO !== 'undefined' && typeof FAMILY_INFO !== 'undefined') {
+    for (const k in FAMILY_INFO) INFO['family_' + k] = { title: FAMILY_INFO[k].title, src: FAMILY_INFO[k].src, body: FAMILY_INFO[k].body + FAMILY_NOTE };
+  }
   back.addEventListener('click', closeInfo);
   document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeInfo(); closeMap(); } });
 }
