@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en" translate="no">
+<head>
+  <meta name="google" content="notranslate">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>District Viewer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Archivo:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css">
+  <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
+  <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+  <link rel="stylesheet" href="map.css">
+</head>
+<body>
+  <header class="topbar">
+  <meta name="google" content="notranslate">
+    <div class="brand">
+      <img class="brand-logo" src="logo.png" alt="">
+      <span class="brand-name">District Viewer</span>
+    </div>
+    <nav class="nav-seg">
+      <a class="seg on" href="map.html">Map</a>
+      <a class="seg" href="compare.html">Compare</a>
+      <a class="seg" href="./">Field</a>
+      <a class="seg" href="../_ui/">Viewer</a>
+      <a class="seg" href="nature.html">Nature</a>
+    </nav>
+    <div class="toolbar">
+      <button id="btn-draw" class="btn accent">Draw a district</button>
+      <button id="btn-compare" class="btn">Compare</button>
+    </div>
+  </header>
+
+  <div class="app">
+    <aside class="rail">
+      <section>
+        <h2>Basemap</h2>
+        <div class="base-toggle" id="base-toggle">
+          <button class="bt on" data-base="light">Map</button>
+          <button class="bt" data-base="sat">Satellite</button>
+          <button class="bt" data-base="history">History</button>
+        </div>
+        <div class="wayback-ctrl" id="wayback-ctrl" style="display:none"></div>
+      </section>
+      <section>
+        <h2>Layers</h2>
+        <div class="layers" id="layers"></div>
+        <div class="poi-filter" id="poi-filter"></div>
+        <div class="poi-filter" id="census-ctrl"></div>
+        <div class="poi-filter" id="parcel-ctrl"></div>
+        <div class="layer-note" id="layer-context">Select a district or draw one to enable layers.</div>
+      </section>
+      <section>
+        <h2>Districts</h2>
+        <input class="dsearch" id="dsearch" placeholder="Search districts…">
+        <div class="dlist" id="dlist"></div>
+      </section>
+      <section>
+        <h2>Typology</h2>
+        <div id="legend"></div>
+      </section>
+    </aside>
+
+    <main id="map"></main>
+
+    <aside class="panel" id="panel">
+      <div class="panel-inner" id="panel-inner"></div>
+    </aside>
+  </div>
+
+  <script type="module" src="map_v2.js"></script>
+</body>
+</html>
+
+
+
+
